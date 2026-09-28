@@ -6,7 +6,7 @@ import {
   KeyIcon,
   ExclamationCircleIcon,
 } from '@heroicons/react/24/outline';
-import DoorButton from '@/app/ui/log-out-button';
+import LogoutButton from '@/app/ui/log-out-button';
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { authenticate } from '@/app/lib/actions';
@@ -68,7 +68,7 @@ export default function LoginForm() {
           </div>
         </div>
         <input type="hidden" name="redirectTo" value={callbackUrl} />
-        <DoorButton
+        <LogoutButton
           type="submit"
           label="Log in"
           variant="brand"

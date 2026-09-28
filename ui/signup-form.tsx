@@ -7,7 +7,7 @@ import {
   KeyIcon,
   UserIcon,
 } from '@heroicons/react/24/outline';
-import DoorButton from '@/app/ui/log-out-button';
+import LogoutButton from '@/app/ui/log-out-button';
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { signUp, type SignUpState } from '@/app/lib/auth-actions';
@@ -113,7 +113,7 @@ export default function SignupForm() {
           </div>
         </div>
 
-        <DoorButton
+        <LogoutButton
           type="submit"
           label="Sign up"
           variant="brand"
