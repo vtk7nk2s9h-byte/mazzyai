@@ -6,7 +6,13 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { db } from '@/src/prisma/db';
-import { sendEmail } from '@/app/lib/email';
+import {
+  escapeHtml,
+  mailColors,
+  mailFonts,
+  renderEmail,
+  sendEmail,
+} from '@/app/lib/email';
 
 /** Mirrors the SystemRole enum in src/prisma/contract.prisma. */
 export type Role = 'USER' | 'SUPPORT' | 'SUPERUSER';
@@ -233,16 +239,30 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       // clickable link — `url` already embeds `token`, so clicking it and
       // typing the code both land on the same callback route.
       async sendVerificationRequest({ identifier, url, token }) {
+        const minutes = OTP_MAX_AGE_SECONDS / 60;
+        const c = mailColors;
+        // The link is machine-generated, but it carries query separators, so
+        // its ampersands still have to be entities inside an href.
+        const href = escapeHtml(url);
+
         await sendEmail({
           to: identifier,
           subject: `Your sign-in code: ${token}`,
-          text: `Your sign-in code is ${token}. It expires in 10 minutes.\n\nOr just click this link to sign in:\n${url}`,
-          html: `
-            <p>Your sign-in code is:</p>
-            <p style="font-size: 28px; font-weight: 700; letter-spacing: 6px;">${token}</p>
-            <p>It expires in 10 minutes.</p>
-            <p>Or click this link to sign in: <a href="${url}">${url}</a></p>
-          `,
+          text: `Your sign-in code is ${token}. It expires in ${minutes} minutes.\n\nOr just click this link to sign in:\n${url}`,
+          html: renderEmail({
+            preheader: `${token} — expires in ${minutes} minutes.`,
+            footer:
+              'You received this because someone asked to sign in to MazzyAI with this address. If that was not you, you can ignore this email.',
+            body: `
+<h1 style="margin:0 0 8px;font-family:${mailFonts.serif};font-size:22px;line-height:30px;font-weight:700;color:${c.text};">Your sign-in code</h1>
+<p style="margin:0 0 20px;font-size:14px;line-height:22px;color:${c.muted};">Enter it on the sign-in page. It expires in ${minutes} minutes.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td align="center" style="background-color:${c.well};border:1px solid ${c.border};border-radius:10px;padding:18px 12px;font-family:${mailFonts.mono};font-size:30px;line-height:36px;font-weight:700;letter-spacing:10px;color:${c.text};">${token}</td></tr>
+</table>
+<p style="margin:24px 0 12px;font-size:14px;line-height:22px;color:${c.muted};">Or sign in with one click:</p>
+<a href="${href}" style="display:inline-block;background-color:${c.brand};border-radius:8px;padding:12px 22px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;">Sign in to MazzyAI</a>
+<p style="margin:20px 0 0;font-size:12px;line-height:18px;color:${c.dim};word-break:break-all;">If the button does not work, paste this link into your browser:<br><a href="${href}" style="color:${c.accent};text-decoration:underline;">${href}</a></p>`,
+          }),
         });
       },
     },

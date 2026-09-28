@@ -1,6 +1,6 @@
 // use prisma-8
 // =============================================================================
-// VOXPOINT — data contract v1
+// MazzyAI — data contract v1
 // =============================================================================
 // Read top to bottom: Auth -> Organizations -> Agents -> Telephony/Calls ->
 // Public demo funnel -> Billing -> Admin/ops -> Sector templates.

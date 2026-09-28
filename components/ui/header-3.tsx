@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
 import ThemeToggle from '@/app/ui/theme-toggle';
 import LogoutButton from '@/app/ui/log-out-button';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { bowlby, inter } from '@/app/ui/fonts';
 import { createPortal } from 'react-dom';
 import {
@@ -58,10 +58,19 @@ const barButton =
     'transition-[color,border-color,box-shadow] duration-200 ' +
     'hover:border-brand-red hover:text-brand-red hover:bg-transparent';
 
+// Routes where the marketing bar has no job. Signing in is a single-purpose
+// screen: there is nowhere to navigate to from it, and the bar's own log-in
+// button points at the page you are already on.
+const BARE_ROUTES = ['/login'];
+
 export function Header() {
     const [open, setOpen] = React.useState(false);
     const scrolled = useScroll(10);
     const router = useRouter();
+    // The bar lives in the root layout, which is a server component and so has
+    // no pathname to test. Suppressing it here is what avoids splitting the
+    // layout into route groups to hide one element.
+    const pathname = usePathname();
 
     React.useEffect(() => {
         if (open) {
@@ -74,6 +83,10 @@ export function Header() {
         };
     }, [open]);
 
+    // Below every hook, not above: bailing out earlier would change the number
+    // of hooks this component runs between renders.
+    if (BARE_ROUTES.includes(pathname)) return null;
+
     return (
         // text-white on the bar colours the wordmark, triggers and links; the
         // dropdown viewport re-asserts text-popover-foreground, so the panels
@@ -81,7 +94,7 @@ export function Header() {
         <header
             className={cn(
                 'sticky top-0 z-50 w-full text-white',
-                // Frosted glass at 10% fill — 90% transparent. A white tint at
+                // Frosted glass at 16% fill — 84% transparent. A white tint at
                 // low alpha over a dark page desaturates into exactly the grey
                 // scrim we had; tinting with the brand red instead keeps the
                 // pane warm and lets the background's colour carry through.
@@ -90,12 +103,12 @@ export function Header() {
                 // Light blur only: at 2xl the frosting smeared the grid and
                 // streaks behind it into a flat wash. A few px still reads as
                 // glass while letting the background pattern show through.
-                'bg-brand-red/10 backdrop-blur-sm backdrop-saturate-200',
+                'bg-brand-red/[0.16] backdrop-blur-sm backdrop-saturate-200',
                 // Lit top lip and a faint bottom edge: glass reads as a pane
                 // with thickness, not a flat wash.
                 'shadow-[inset_0_1px_0_rgba(255,214,219,0.3),inset_0_-1px_0_rgba(255,255,255,0.07),0_10px_30px_-24px_rgba(0,0,0,0.9)]',
                 {
-                    'bg-brand-red/[0.16] shadow-[inset_0_1px_0_rgba(255,214,219,0.3),inset_0_-1px_0_rgba(255,255,255,0.07),0_18px_40px_-22px_rgba(0,0,0,1)]':
+                    'bg-brand-red/[0.24] shadow-[inset_0_1px_0_rgba(255,214,219,0.3),inset_0_-1px_0_rgba(255,255,255,0.07),0_18px_40px_-22px_rgba(0,0,0,1)]':
                         scrolled,
                 },
             )}
