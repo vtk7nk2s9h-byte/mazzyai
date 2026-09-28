@@ -106,3 +106,52 @@ export async function signUp(
 
   return { message: null };
 }
+
+export type RequestEmailCodeState = {
+  error?: string;
+  message?: string | null;
+};
+
+const RequestEmailCodeSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email({ message: 'Please enter a valid email address.' }),
+});
+
+/**
+ * Starts the email/OTP sign-in: generates a code, emails it (with a magic
+ * link alongside it), and returns without redirecting. `redirect: false`
+ * means signIn() resolves instead of throwing NEXT_REDIRECT, so — unlike
+ * signUp() above — it's safe to catch every error here, including a Resend
+ * outage, and hand the caller a plain message instead of a crashed page.
+ */
+export async function requestEmailCode(
+  _prevState: RequestEmailCodeState,
+  formData: FormData,
+): Promise<RequestEmailCodeState> {
+  const parsed = RequestEmailCodeSchema.safeParse({
+    email: formData.get('email'),
+  });
+
+  if (!parsed.success) {
+    return {
+      error: parsed.error.flatten().fieldErrors.email?.[0] ?? 'Invalid email.',
+    };
+  }
+
+  try {
+    await signIn('email-otp', {
+      email: parsed.data.email,
+      redirect: false,
+    });
+  } catch (error) {
+    console.error('Failed to send sign-in email:', error);
+    return { error: 'Could not send the code. Please try again in a moment.' };
+  }
+
+  return {
+    message: 'Check your email for a 6-digit code (and a sign-in link).',
+  };
+}
