@@ -6,14 +6,22 @@ import Link from "next/link";
 import { generatePagination } from "@/app/lib/utils";
 import { usePathname, useSearchParams } from "next/navigation";
 
-export default function Pagination({ totalPages }: { totalPages: number }) {
+export default function Pagination({
+  totalPages,
+  // Which search param this control owns. Defaults to "page"; a page showing
+  // two paginated tables gives each its own name so they don't move together.
+  param = "page",
+}: {
+  totalPages: number;
+  param?: string;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentPage = Number(searchParams.get("page")) || 1;
+  const currentPage = Number(searchParams.get(param)) || 1;
 
   const createPageURL = (pageNumber: number | string) => {
     const params = new URLSearchParams(searchParams);
-    params.set("page", pageNumber.toString());
+    params.set(param, pageNumber.toString());
     return `${pathname}?${params.toString()}`;
   };
   const allPages = generatePagination(currentPage, totalPages);

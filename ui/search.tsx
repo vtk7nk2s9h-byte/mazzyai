@@ -29,7 +29,10 @@ const searchParams = useSearchParams();
         Search
       </label>
       <input
-        className="peer block w-full rounded-md border border-gray-200 py-[9px] pl-10 text-sm outline-2 placeholder:text-gray-500"
+        // @tailwindcss/forms gives every input a white background, which is the
+        // one surface this app doesn't have. bg-gray-50 is the same panel tone
+        // the table below it sits on, so the field reads as part of the page.
+        className="peer block w-full rounded-md border border-gray-200 bg-gray-50 py-[9px] pl-10 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-maroon-400 focus:ring-1 focus:ring-maroon-400"
         placeholder={placeholder}
         onChange={(e) => {
           handleSearch(e.target.value);

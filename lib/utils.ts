@@ -7,6 +7,27 @@ export const formatCurrency = (amount: number) => {
   });
 };
 
+/** Milliseconds to m:ss, the way a call length is normally read. */
+export const formatDuration = (ms: number | null | undefined) => {
+  if (ms == null) return '—';
+  const total = Math.round(ms / 1000);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+};
+
+/** "Ada Lovelace" -> "AL", "ada@x.io" -> "A". Fallback when there's no image. */
+export const initialsOf = (name: string) => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+/** The name we captured for a caller, falling back to their number. */
+export const callerLabel = (call: {
+  callerName?: string | null;
+  fromNumber?: string | null;
+}) => call.callerName ?? call.fromNumber ?? 'Unknown caller';
+
 export const formatDateToLocal = (
   dateStr: string,
   locale: string = 'en-US',

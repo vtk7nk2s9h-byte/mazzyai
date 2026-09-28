@@ -1,27 +1,96 @@
+import Image from 'next/image';
 import Link from 'next/link';
+
+import { auth, hasRole, type Role } from '@/auth';
 import NavLinks from '@/app/ui/dashboard/nav-links';
 import LogoutButton from '@/app/ui/log-out-button';
 import { signOutAction } from '@/app/lib/actions';
+import { initialsOf } from '@/app/lib/utils';
 
-export default function SideNav() {
+export default async function SideNav() {
+  const session = await auth();
+  const user = session?.user;
+  const displayName = user?.name || user?.email || 'Account';
+
   return (
-    <div className="flex h-full flex-col px-3 py-4 md:px-2">
+    // Translucent rather than a solid panel, so the animated field behind the
+    // page shows through and the sidebar reads as a pane over the app.
+    <div className="flex h-full flex-col border-white/[0.07] bg-white/[0.03] px-2 py-4 backdrop-blur-2xl md:border-r">
+      {/* Same plate as the account block and the sign-out button, so the
+          sidebar opens and closes on the same shape. */}
       <Link
-        className="mb-2 flex h-20 items-end justify-start rounded-md bg-gradient-to-br from-maroon-600 to-ink-900 p-4 md:h-40"
         href="/"
+        // Same glass as the account block and the sign-out button.
+        className="mb-5 flex h-16 items-center justify-center overflow-hidden rounded-lg border border-white/[0.07] bg-white/[0.05] px-3 backdrop-blur-xl transition-colors hover:bg-white/[0.08]"
       >
-        <div className="w-32 text-white md:w-40">
-        </div>
+        <Image
+          // Served from /public, so the URL is root-relative and has no
+          // "public" segment — and no backslashes.
+          src="/mazzyai-phone-logo.svg"
+          alt="MazzyAI"
+          width={794}
+          height={584}
+          // The sidebar is always on screen, so this is never below the fold —
+          // without priority, next/image lazy-loads it and the plate sits
+          // empty until the browser gets round to fetching it.
+          priority
+          unoptimized
+          // No filter: the mark renders in its own colours.
+          className="h-12 w-auto object-contain"
+        />
       </Link>
-      <div className="flex grow flex-row justify-between space-x-2 md:flex-col md:space-x-0 md:space-y-2">
-        <NavLinks />
-        <div className="hidden h-auto w-full grow rounded-md bg-gray-50 md:block"></div>
+
+      <div className="flex grow flex-row justify-between gap-1.5 md:flex-col md:justify-start">
+        {/* The role rides on the session cookie, so this costs no query. It
+            only hides the link — app/dashboard/organizations re-checks. */}
+        <NavLinks
+          isSuperuser={hasRole(
+            (user as { role?: Role } | undefined)?.role,
+            'SUPERUSER',
+          )}
+        />
+
+        {/* Pushes the account block to the bottom on desktop; collapses to
+            nothing in the mobile row. */}
+        <div className="hidden grow md:block" />
+
+        {/* Same height, radius and fill as the sign-out button below, so the
+            two read as one stacked pair rather than two unrelated boxes. */}
+        <div className="mb-2 hidden h-11 items-center gap-2.5 rounded-lg bg-white/[0.05] px-2.5 backdrop-blur-xl md:flex border border-white/[0.07]">
+          {user?.image ? (
+            <Image
+              src={user.image}
+              alt=""
+              width={28}
+              height={28}
+              className="h-7 w-7 shrink-0 rounded-full border border-brand-red-lit/70 object-cover"
+            />
+          ) : (
+            <span
+              aria-hidden="true"
+              // Outline only — no fill, so the ring is the single red mark and
+              // the initials read as type rather than as a badge.
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brand-red-lit/70 text-[11px] font-semibold text-gray-900"
+            >
+              {initialsOf(displayName)}
+            </span>
+          )}
+          <div className="min-w-0">
+            <p className="truncate text-xs font-medium text-gray-900">
+              {displayName}
+            </p>
+            {user?.email && user.name && (
+              <p className="truncate text-[10px] text-gray-500">{user.email}</p>
+            )}
+          </div>
+        </div>
+
         <LogoutButton
           label="Sign Out"
-          variant="brand"
+          variant="glass"
           onLogout={signOutAction}
           resetAfter={0}
-          className="h-[48px] w-full grow justify-between md:flex-none"
+          className="h-11 w-full grow rounded-lg md:flex-none md:grow-0"
         />
       </div>
     </div>

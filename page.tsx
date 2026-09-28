@@ -6,6 +6,7 @@ import Image from 'next/image';
 import ReflectiveDiv from "@/app/ui/dashboard/reflective-div";
 import NavigationMenu from "@/app/ui/dashboard/navigation-menu";
 import ScrollGlobe from "@/components/ui/scroll-globe";
+import VoiceAgentWidget from "@/components/ui/voice-agent-widget";
 import {
   FeaturesSection,
   ServicesSection,
@@ -21,11 +22,13 @@ export default function Page() {
     <main className="flex min-h-screen flex-col p-6">
 
         <div className={styles.shape} />
-      <div className="flex h-20 shrink-0 items-end rounded-lg bg-gradient-to-br from-maroon-600 to-ink-900 p-4 md:h-52">
+      <div className="flex h-20 shrink-0 items-end rounded-lg border border-white/[0.07] bg-gradient-to-br from-maroon-600/70 to-ink-900/70 p-4 backdrop-blur-xl md:h-52">
       </div>
       <NavigationMenu />
       <div className="mt-4 flex grow flex-col gap-4 md:flex-row">
-        <div className="flex flex-col justify-center gap-6 rounded-lg bg-gray-50 px-6 py-10 md:w-2/5 md:px-20">
+        {/* Translucent rather than bg-gray-50: that token is opaque, so a
+            backdrop-filter behind it would have nothing to blur. */}
+        <div className="flex flex-col justify-center gap-6 rounded-lg border border-white/[0.07] bg-white/[0.035] px-6 py-10 backdrop-blur-xl md:w-2/5 md:px-20">
         <div
   className="relative w-0 h-0 border-l-[15px] border-r-[15px] border-b-[26px] border-l-transparent border-r-transparent border-b-black"
 />
@@ -81,6 +84,8 @@ export default function Page() {
         </ReflectiveDiv>
       ))}
     </section>
+
+    <VoiceAgentWidget />
     </>
   );
 }

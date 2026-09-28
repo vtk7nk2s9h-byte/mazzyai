@@ -229,3 +229,10 @@ input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
+/* reCAPTCHA v3 floats its badge in the bottom-right corner, which is where the
+   voice widget lives. Google permits hiding it only if the attribution it
+   carries is shown instead — the widget panel prints that line. */
+.grecaptcha-badge {
+  visibility: hidden;
+}
