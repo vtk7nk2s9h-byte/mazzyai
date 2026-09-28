@@ -93,6 +93,7 @@ const authAdapter: Adapter = {
       token,
       expiresAt: expires.toISOString(),
     });
+    return { identifier, token, expires };
   },
   // Consumes the token so a code or link can only be used once — the lookup
   // and delete run in one transaction so two near-simultaneous attempts
@@ -134,7 +135,7 @@ const authAdapter: Adapter = {
     return toAdapterUser(row);
   },
   async updateUser({ id, ...data }) {
-    const [row] = await db.orm.public.User.where({ id })
+    const row = await db.orm.public.User.where({ id })
       .select(...ADAPTER_USER_COLUMNS)
       .update({
         ...(data.email !== undefined && { email: data.email }),
