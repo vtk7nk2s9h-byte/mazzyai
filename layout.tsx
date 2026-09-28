@@ -8,10 +8,10 @@ import { Metadata } from 'next';
  
 export const metadata: Metadata = {
   title: {
-    template: '%s | Acme Dashboard',
-    default: 'Acme Dashboard',
+    template: '%s | Mazzy AI',
+    default: 'Mazzy AI',
   },
-  description: 'The official Next.js Learn Dashboard built with App Router.',
+  description: 'Your next AI voice agents recruiter',
   metadataBase: new URL('https://next-learn-dashboard.vercel.sh'),
 };
 

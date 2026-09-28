@@ -129,6 +129,35 @@
   height: 15px;
 }
 
+/* Outline: the OTP toggle's palette, so the two primary moves on the login
+   card carry the same colour story — pale marks on a faint maroon hairline at
+   rest, everything reddening together on hover, fill never changing.
+   Like .glass, the class is doubled on the hover rule: the generic
+   `.button:hover { --arrow }` further down matches at equal specificity and
+   would otherwise win on source order and grey the arrow back out. */
+.outline {
+  --accent: #f7f2f3; /* gray-900 — paints the door and the figure together */
+  --bg: transparent;
+  --text: #f7f2f3;
+  --arrow: #f7f2f3;
+  --doorway: #0a0809; /* the void past the door, as on .glass */
+  --knob: #ff2e43; /* brand-red-lit */
+  --focus: #9c2739; /* maroon-400 */
+  border: 1px solid rgba(156, 39, 57, 0.4); /* maroon-400/40 */
+  transition:
+    color 200ms,
+    border-color 200ms;
+}
+
+.outline.outline:hover:not([aria-busy="true"]):not([aria-disabled="true"]) {
+  --text: #ff2e43;
+  --arrow: #ff2e43;
+  --accent: #ff2e43;
+  /* The knob is red at rest; on a red door it inverts to stay visible. */
+  --knob: #20070b;
+  border-color: #8c1925; /* brand-red */
+}
+
 /* Header bar: sits on glass, so no fill of its own — black label with the
    system red door and figure, turning red on hover with a thin red border to
    match the other bar items. Declared after .button so the border wins. */

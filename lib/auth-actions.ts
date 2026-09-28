@@ -110,6 +110,12 @@ export async function signUp(
 export type RequestEmailCodeState = {
   error?: string;
   message?: string | null;
+  /**
+   * The address the code went to, echoed back so the verify form can carry it
+   * in a hidden field instead of asking for it a second time. Only set on a
+   * successful send.
+   */
+  email?: string;
 };
 
 const RequestEmailCodeSchema = z.object({
@@ -152,6 +158,7 @@ export async function requestEmailCode(
   }
 
   return {
+    email: parsed.data.email,
     message: 'Check your email for a 6-digit code (and a sign-in link).',
   };
 }

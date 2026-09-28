@@ -8,18 +8,25 @@ import {
 } from '@heroicons/react/24/outline';
 import LogoutButton from '@/app/ui/log-out-button';
 import Link from 'next/link';
-import { useActionState } from 'react';
+import { useActionState, useId } from 'react';
 import { authenticate } from '@/app/lib/actions';
 import {
   requestEmailCode,
   type RequestEmailCodeState,
 } from '@/app/lib/auth-actions';
 import { useSearchParams } from 'next/navigation';
+import styles from '@/app/ui/login-form.module.css';
 
 const initialCodeState: RequestEmailCodeState = {};
 
 const field =
   'peer block w-full rounded-md border border-gray-200 py-[9px] pl-10 text-sm outline-2 placeholder:text-gray-500';
+
+// Glass rather than the old solid bg-gray-50, so the animated field behind the
+// page carries through the card — the same surface the sidebar and the logo
+// plate above this form use.
+const panel =
+  'rounded-[inherit] border border-white/[0.07] bg-white/[0.05] px-6 pb-4 pt-8 backdrop-blur-xl';
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
@@ -32,13 +39,31 @@ export default function LoginForm() {
     requestEmailCode,
     initialCodeState,
   );
+  // clipPath ids are document-global, so it has to be unique per instance.
+  const aboveEnvelope = `otp-above-${useId().replace(/:/g, '')}`;
 
   return (
     <>
-    <form action={formAction} className="space-y-3">
-      <div className="flex-1 rounded-lg bg-gray-50 px-6 pb-4 pt-8">
+    {/* Two copies of the same travelling arc — a blurred one bleeding outside
+        the card for the glow, a crisp one on the edge itself. Same pairing the
+        landing page's glass cards use, so the ring reads as the site's, not as
+        a one-off on the login screen. */}
+    <div className="relative rounded-lg">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -inset-[3px] rounded-[inherit] opacity-60 blur-[10px]"
+      >
+        <div className="glow-ring h-full w-full rounded-[inherit] [--ring-w:3px]" />
+      </div>
+      <div
+        aria-hidden="true"
+        className="glow-ring pointer-events-none absolute inset-0 z-10 rounded-[inherit]"
+      />
+
+      <form action={formAction} className="relative rounded-lg">
+      <div className={panel}>
         <h1 className={`${lusitana.className} mb-3 text-2xl`}>
-          Please log in to continue.
+          Log in to your dashboard
         </h1>
         <div className="w-full">
           <div>
@@ -67,7 +92,7 @@ export default function LoginForm() {
             >
               Password
             </label>
-            <div className="relative">
+            <div className="relative rounded-lg">
               <input
                 className="peer block w-full rounded-md border border-gray-200 py-[9px] pl-10 text-sm outline-2 placeholder:text-gray-500"
                 id="password"
@@ -85,7 +110,7 @@ export default function LoginForm() {
         <LogoutButton
           type="submit"
           label="Log in"
-          variant="brand"
+          variant="outline"
           disabled={isPending}
           className="mt-4 w-full justify-between"
         />
@@ -113,11 +138,81 @@ export default function LoginForm() {
           </Link>
         </div>
       </div>
-    </form>
+      </form>
+    </div>
 
-    <details className="mt-3 rounded-lg bg-gray-50 px-6 py-4">
-      <summary className="cursor-pointer text-sm font-medium text-gray-900">
-        Or sign in with an emailed code
+    {/* Same ring as the card above, so the two panels read as a pair. */}
+    <div className="relative mt-3 rounded-lg">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -inset-[3px] rounded-[inherit] opacity-60 blur-[10px]"
+      >
+        <div className="glow-ring h-full w-full rounded-[inherit] [--ring-w:3px]" />
+      </div>
+      <div
+        aria-hidden="true"
+        className="glow-ring pointer-events-none absolute inset-0 z-10 rounded-[inherit]"
+      />
+
+    <details className="relative rounded-[inherit] border border-white/[0.07] bg-white/[0.05] px-6 py-4 backdrop-blur-xl">
+      <summary className={styles.otpToggle}>
+        <span className={styles.mail} aria-hidden="true">
+          <svg
+            viewBox="0 0 40 30"
+            width="34"
+            height="26"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          >
+            <defs>
+              {/* Everything above the envelope's top edge. The letter is
+                  clipped rather than hidden behind an opaque flap — the panel
+                  is translucent glass now, so a shape painted in "the panel
+                  colour" would show as a dark patch on it. */}
+              <clipPath id={aboveEnvelope}>
+                <rect x="-10" y="-16" width="60" height="23" />
+              </clipPath>
+            </defs>
+
+            <rect
+              className={styles.body}
+              x="2"
+              y="7"
+              width="36"
+              height="21"
+              rx="2"
+            />
+            <path className={styles.flap} d="M2 7 20 19 38 7Z" />
+            <g clipPath={`url(#${aboveEnvelope})`}>
+              <rect
+                className={styles.letter}
+                x="8"
+                y="6"
+                width="24"
+                height="16"
+                rx="1.5"
+              />
+            </g>
+          </svg>
+        </span>
+        <span className={styles.label}>OTP Sign in</span>
+        <span className={styles.chevron} aria-hidden="true">
+          <svg
+            viewBox="0 0 16 16"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 6l4 4 4-4" />
+          </svg>
+        </span>
       </summary>
 
       <form action={codeFormAction} className="mt-4 space-y-3">
@@ -135,17 +230,12 @@ export default function LoginForm() {
             name="email"
             placeholder="Enter your email address"
             autoComplete="email"
+            defaultValue={codeState.email}
             required
           />
           <AtSymbolIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
         </div>
-        <LogoutButton
-          type="submit"
-          label="Send me a code"
-          variant="dark"
-          disabled={isCodePending}
-          className="w-full justify-between"
-        />
+        <SendCodeButton pending={isCodePending} sent={!!codeState.email} />
         <div aria-live="polite" aria-atomic="true">
           {codeState.error && (
             <p className="text-sm text-red-500">{codeState.error}</p>
@@ -156,60 +246,117 @@ export default function LoginForm() {
         </div>
       </form>
 
-      {/* Plain GET straight to Auth.js's own callback route — the emailed
+      {/* Only appears once a code is actually out — there is nothing to type
+          before that, and an address field here would be the second one on
+          screen asking for the same thing. The address rides along hidden,
+          taken from what requestEmailCode just confirmed.
+
+          Plain GET straight to Auth.js's own callback route — the emailed
           link is the same URL, just with `token` filled in already, so
           clicking it and typing the code here verify identically. No
           client-side handling needed. */}
-      <form
-        method="get"
-        action="/api/auth/callback/email-otp"
-        className="mt-4 space-y-3 border-t border-gray-200 pt-4"
-      >
-        <input type="hidden" name="callbackUrl" value={callbackUrl} />
-        <label
-          className="block text-xs font-medium text-gray-900"
-          htmlFor="otp-verify-email"
+      {codeState.email && (
+        <form
+          method="get"
+          action="/api/auth/callback/email-otp"
+          className="mt-4 space-y-3 border-t border-gray-200 pt-4"
         >
-          Email
-        </label>
-        <div className="relative">
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
+          <input type="hidden" name="email" value={codeState.email} />
+
+          <label
+            className="block text-xs font-medium text-gray-900"
+            htmlFor="otp-token"
+          >
+            6-digit code
+          </label>
+          {/* Keyed on the address so a fresh send remounts the field, which is
+              what lets autoFocus fire again and clears any stale digits. */}
           <input
-            className={field}
-            id="otp-verify-email"
-            type="email"
-            name="email"
-            placeholder="Enter your email address"
-            autoComplete="email"
+            key={codeState.email}
+            autoFocus
+            className={field.replace('pl-10', 'px-3')}
+            id="otp-token"
+            type="text"
+            name="token"
+            inputMode="numeric"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            placeholder="123456"
+            autoComplete="one-time-code"
             required
           />
-          <AtSymbolIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
-        </div>
-        <label
-          className="block text-xs font-medium text-gray-900"
-          htmlFor="otp-token"
-        >
-          6-digit code
-        </label>
-        <input
-          className={field.replace('pl-10', 'px-3')}
-          id="otp-token"
-          type="text"
-          name="token"
-          inputMode="numeric"
-          pattern="[0-9]{6}"
-          maxLength={6}
-          placeholder="123456"
-          autoComplete="one-time-code"
-          required
-        />
-        <LogoutButton
-          type="submit"
-          label="Sign in with code"
-          variant="brand"
-          className="w-full justify-between"
-        />
-      </form>
+          <LogoutButton
+            type="submit"
+            label="Sign in with code"
+            variant="brand"
+            className="w-full justify-between"
+          />
+        </form>
+      )}
     </details>
+    </div>
     </>
+  );
+}
+
+/**
+ * Submit button for the code request. The door-and-figure on the sign-in
+ * buttons says "you are going through" — wrong verb here, where nothing moves
+ * but the message, so the envelope tips into an inbox tray instead. Same
+ * approach as log-out-button: one SVG, every stage a selector off data-state,
+ * no animation state in React.
+ */
+function SendCodeButton({
+  pending,
+  sent,
+}: {
+  pending: boolean;
+  sent: boolean;
+}) {
+  const state = pending ? 'sending' : sent ? 'sent' : 'idle';
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      data-state={state}
+      aria-busy={pending}
+      className={styles.sendButton}
+    >
+      <span className={styles.label}>
+        {pending ? 'Sending…' : sent ? 'Send another code' : 'Send me a code'}
+      </span>
+
+      <svg
+        className={styles.outbox}
+        viewBox="0 0 48 32"
+        width="42"
+        height="28"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        aria-hidden="true"
+      >
+        {/* The tray sits still; the envelope flies into it. Drawn first so a
+            landing envelope reads as being in front of the lip. */}
+        <path
+          className={styles.tray}
+          d="M27 15h5l2 4h6l2-4h5v13H27z"
+        />
+        <g className={styles.packet}>
+          <rect x="3" y="9" width="19" height="14" rx="1.5" />
+          <path d="M3 10.5 12.5 18 22 10.5" />
+        </g>
+        {/* Three speed lines, drawn in behind the envelope as it launches. */}
+        <g className={styles.trail}>
+          <path d="M0 12h6" />
+          <path d="M0 17h9" />
+          <path d="M0 22h5" />
+        </g>
+      </svg>
+    </button>
   );
 }

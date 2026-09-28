@@ -19,9 +19,11 @@ type Props = {
    * "dark" = dark button for light pages, "light" = light button for dark
    * pages, "brand" = brand maroon button with a white door and figure,
    * "bar" = unfilled, for the header glass (black label, red door, red hover),
-   * "glass" = translucent and blurred, for the sidebar panel.
+   * "glass" = translucent and blurred, for the sidebar panel,
+   * "outline" = unfilled with a maroon hairline, matching the login card's
+   * OTP toggle.
    */
-  variant?: "dark" | "light" | "brand" | "bar" | "glass";
+  variant?: "dark" | "light" | "brand" | "bar" | "glass" | "outline";
   /**
    * "submit" lets the click submit the surrounding form straight away, so the
    * animation plays over the request instead of delaying it.
