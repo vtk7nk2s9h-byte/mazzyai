@@ -1,0 +1,154 @@
+.navigation {
+  --item: 70px;
+  position: relative;
+  width: calc(var(--item) * var(--count) + 40px);
+  max-width: 100%;
+  height: 70px;
+  margin-top: 40px; /* room for the raised bubble */
+  /* Black bar warmed by a trace of the maroon accent at the top edge. */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bar) 88%, var(--accent)) 0%,
+    var(--bar) 60%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 28px -14px rgba(0, 0, 0, 0.8);
+  border-radius: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: inherit;
+}
+
+.navigation ul {
+  position: relative;
+  display: flex;
+  width: calc(var(--item) * var(--count));
+  margin: 0;
+  padding: 0;
+}
+
+.navigation li {
+  position: relative;
+  list-style: none;
+  width: var(--item);
+  height: 70px;
+  z-index: 1;
+}
+
+.navigation a {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.62);
+  text-decoration: none;
+  outline: none;
+  transition: color 0.35s;
+}
+
+.navigation a:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.active a,
+.active a:hover {
+  color: #fff;
+}
+
+.icon {
+  position: relative;
+  display: block;
+  line-height: 0;
+  font-size: 1.6em;
+  transition: transform 0.5s;
+}
+
+.navigation li:not(.active) a:hover .icon {
+  transform: translateY(-4px);
+}
+
+.active .icon {
+  transform: translateY(-35px);
+}
+
+.text {
+  position: absolute;
+  font-size: 0.8em;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s, transform 0.5s;
+}
+
+.active .text {
+  opacity: 1;
+  transform: translateY(12px);
+}
+
+.navigation a:focus-visible .icon {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+  border-radius: 50%;
+}
+
+/* The raised circle with the "cut-out" border */
+.indicator {
+  position: absolute !important;
+  top: -50%;
+  left: 0;
+  width: 70px !important;
+  height: 70px !important;
+  /* Domed maroon: lit from the top-left, deepening to near-black at the base. */
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--accent) 80%, #fff) 0%,
+    var(--accent) 45%,
+    color-mix(in srgb, var(--accent) 62%, #000) 100%
+  );
+  border-radius: 50%;
+  border: 6px solid var(--notch);
+  box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--accent) 65%, transparent);
+  box-sizing: border-box;
+  z-index: 0 !important;
+  transform: translateX(calc(var(--item) * var(--active)));
+  transition: transform 0.5s;
+}
+
+/* Smooth curves where the notch meets the bar */
+.indicator::before,
+.indicator::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+}
+
+.indicator::before {
+  left: -22px;
+  border-top-right-radius: 20px;
+  box-shadow: 1px -10px 0 0 var(--notch);
+}
+
+.indicator::after {
+  right: -22px;
+  border-top-left-radius: 20px;
+  box-shadow: -1px -10px 0 0 var(--notch);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon,
+  .text,
+  .indicator {
+    transition: none;
+  }
+}

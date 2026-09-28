@@ -1,0 +1,216 @@
+/* The OTP disclosure's toggle and the code-request button, both built the way
+   log-out-button builds its door: one SVG, no animation state in React, every
+   stage driven by a selector. */
+
+.otpToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  cursor: pointer;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(156, 39, 57, 0.4); /* maroon-400/40 */
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #f7f2f3; /* gray-900 */
+  /* Both are needed: Safari draws the triangle through a pseudo-element, every
+     other engine through list-style. */
+  list-style: none;
+  transition:
+    color 200ms,
+    border-color 200ms;
+}
+
+.otpToggle::-webkit-details-marker {
+  display: none;
+}
+
+/* Same move as the "Create an account" link below it — the marks redden, the
+   fill stays flat, so the panel keeps reading as one surface. */
+.otpToggle:hover,
+details[open] > .otpToggle {
+  color: #ff2e43; /* brand-red-lit */
+  border-color: #8c1925; /* brand-red */
+}
+
+.otpToggle:focus-visible {
+  outline: 2px solid #9c2739; /* maroon-400 */
+  outline-offset: 2px;
+}
+
+.label {
+  flex: 1;
+  text-align: left;
+}
+
+/* ---------- Envelope on the toggle ---------- */
+
+.mail {
+  display: flex;
+  align-items: center;
+}
+
+/* Stroke only, no fill: the panels are translucent glass, so a shape painted
+   in "the panel colour" to mask the letter would show as a dark patch on it.
+   The letter is clipped to the region above the envelope instead — invisible
+   while it is inside, revealed as it rises past the top edge. */
+.letter {
+  fill: currentColor;
+  stroke: none;
+  transform-box: view-box;
+  transform: translateY(5px);
+  transition: transform 400ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* Hinged on its own top edge. Flipping the triangle with scaleY sweeps it
+   through flat on the way, which is the fold a real flap makes — the same
+   trick the door uses to swing on scaleX. */
+.flap {
+  transform-box: view-box;
+  transform-origin: 20px 7px;
+  transition: transform 350ms ease-in-out;
+}
+
+/* Hover cracks it open; opening the disclosure flips it fully and the letter
+   rises out. Specificity puts the [open] rules above the hover ones, so a
+   hover over an already-open toggle doesn't pull the flap back down. */
+.otpToggle:hover .flap {
+  transform: scaleY(0.25);
+}
+
+details[open] > .otpToggle .flap {
+  transform: scaleY(-1);
+}
+
+details[open] > .otpToggle .letter {
+  transform: translateY(-8px);
+}
+
+.chevron {
+  display: flex;
+  align-items: center;
+  transition: transform 300ms ease;
+}
+
+details[open] > .otpToggle .chevron {
+  transform: rotate(180deg);
+}
+
+/* ---------- Send-a-code button ---------- */
+
+.sendButton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  cursor: pointer;
+  border: 1px solid #291619; /* gray-200 */
+  border-radius: 8px;
+  /* Matches the input fill above it rather than the glass, so the control
+     reads as sitting on the panel instead of dissolving into it. */
+  background: #1a1012; /* gray-100 */
+  color: #f7f2f3;
+  padding: 0.5rem 0.75rem 0.5rem 1.25rem;
+  font: inherit;
+  font-size: 1rem;
+  transition:
+    background-color 150ms,
+    border-color 200ms,
+    color 200ms,
+    transform 150ms;
+}
+
+.sendButton:hover:not(:disabled) {
+  color: #ff2e43;
+  border-color: #8c1925;
+}
+
+.sendButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.sendButton:focus-visible {
+  outline: 2px solid #9c2739;
+  outline-offset: 3px;
+}
+
+.sendButton:disabled {
+  cursor: default;
+}
+
+.outbox {
+  display: block;
+  overflow: visible;
+}
+
+.tray {
+  transform-box: view-box;
+}
+
+.packet {
+  transform-box: view-box;
+  transform-origin: 12.5px 16px;
+  transition:
+    transform 650ms cubic-bezier(0.45, 0, 0.55, 1),
+    opacity 300ms 350ms;
+}
+
+/* Speed lines, off until the envelope actually launches. */
+.trail {
+  opacity: 0;
+  transform-box: view-box;
+  transition:
+    opacity 250ms,
+    transform 450ms;
+}
+
+.sendButton:hover:not(:disabled) .packet {
+  transform: translateX(3px);
+}
+
+.sendButton:hover:not(:disabled) .trail {
+  opacity: 0.4;
+}
+
+.sendButton[data-state='sending'] .packet {
+  transform: translate(26px, 5px) scale(0.5);
+  opacity: 0;
+}
+
+.sendButton[data-state='sending'] .trail {
+  opacity: 1;
+  transform: translateX(8px);
+}
+
+/* The tray takes the weight as the envelope lands. */
+.sendButton[data-state='sending'] .tray {
+  animation: tray-catch 800ms ease-out;
+}
+
+@keyframes tray-catch {
+  0%,
+  55% {
+    transform: translateY(0);
+  }
+  72% {
+    transform: translateY(2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flap,
+  .letter,
+  .chevron,
+  .packet,
+  .trail {
+    transition: none;
+  }
+
+  .sendButton[data-state='sending'] .tray {
+    animation: none;
+  }
+}

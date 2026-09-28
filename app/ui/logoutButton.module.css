@@ -1,0 +1,353 @@
+.button {
+  --accent: #9c2739; /* maroon-400 — lifted off the dark surface so the
+                        door and figure stay legible */
+  --walk: 220ms;
+  display: inline-flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.5rem 0.75rem 0.5rem 1.25rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+
+/* The ring sits outside the button, so it must contrast with the page rather
+   than the button — hence its own token instead of reusing --accent. */
+.button:focus-visible {
+  outline: 2px solid var(--focus, var(--accent));
+  outline-offset: 3px;
+}
+
+.button[aria-busy="true"] {
+  cursor: default;
+}
+
+.button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dark {
+  --accent: #b8394d; /* brightened maroon — maroon-500 goes muddy on ink */
+  --bg: #1a171a; /* ink-800 */
+  --text: #fff;
+  --doorway: #0c0a0b; /* gray-950 — the void past the door */
+  --knob: #fff;
+}
+
+.light {
+  --accent: #7b1e2c; /* maroon-500 */
+  --bg: #faf7f8; /* gray-50 */
+  --text: #171315; /* gray-900 */
+  --doorway: #121013; /* ink-900 */
+  --knob: #faf7f8;
+}
+
+/* Brand fill, white door and figure — matches the primary buttons site-wide. */
+.brand {
+  --accent: #fff;
+  --bg: #7b1e2c; /* maroon-500 */
+  --text: #fff;
+  --doorway: #350c12; /* maroon-800 — the dark beyond the door */
+  --knob: #0a0809; /* black handle, matching the header button */
+  --focus: #5e1622; /* maroon-600, readable on the page behind the button */
+}
+
+.brand:hover:not([aria-busy="true"]):not([aria-disabled="true"]) {
+  --bg: #9c2739; /* maroon-400, matching the hover on the standard buttons */
+}
+
+/* Glass: for the blurred sidebar, where a solid maroon slab would sit on top
+   of the panel rather than in it. Declared after .button so its border wins
+   over that rule's `border: 0`. */
+.glass {
+  /* The door and the walking figure both paint from --accent, so it has to be
+     the light value — a pink door on a dark panel lost the figure against it.
+     The doorway stays near-black so the exit still reads as an opening, and
+     the knob carries the brand red. */
+  --accent: #f7f2f3;
+  --bg: rgba(255, 255, 255, 0.05);
+  --text: #f7f2f3;
+  --doorway: #0a0809;
+  --knob: #ff2e43; /* the globe's limb red */
+  --focus: #9c2739;
+  /* Default is near-black, which is invisible on this panel. */
+  --arrow: #a08f93;
+  /* Matches the account block's hairline. Declared after .button so it wins
+     over that rule's `border: 0`. */
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  /* Prefixed first, standard last — written the other way round the minifier
+     drops the unprefixed property and the blur dies in Firefox. */
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  /* The stock padding is built for a 48px-tall button; at sidebar size the
+     32px-tall doorway was overflowing it. */
+  padding: 0 0.625rem;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  justify-content: space-between;
+  transition:
+    color 200ms,
+    border-color 200ms;
+}
+
+/* Hover reddens the label, the arrow, the door and the figure — not the fill
+   — the same move the nav links make, so the sidebar stays flat glass
+   throughout and only the marks carry state.
+   `.glass.glass` doubles the class deliberately: the generic
+   `.button:hover { --arrow }` rule further down matches at equal specificity
+   and would otherwise win on source order and grey the arrow back out. */
+.glass.glass:hover:not([aria-busy="true"]):not([aria-disabled="true"]) {
+  --text: #ff2e43;
+  --arrow: #ff2e43;
+  /* --accent paints the door and the figure together, so one line reddens
+     both. */
+  --accent: #ff2e43;
+  /* The knob is red at rest; on a red door it inverts to stay visible. */
+  --knob: #20070b;
+  border-color: rgba(255, 46, 67, 0.6);
+}
+
+/* Scaled to the shorter button so the figure walks through a doorway that
+   fits inside it rather than being clipped by it. */
+.glass .icon {
+  width: 36px;
+  height: 24px;
+}
+
+.glass .arrow svg {
+  width: 24px;
+  height: 15px;
+}
+
+/* Outline: the OTP toggle's palette, so the two primary moves on the login
+   card carry the same colour story — pale marks on a faint maroon hairline at
+   rest, everything reddening together on hover, fill never changing.
+   Like .glass, the class is doubled on the hover rule: the generic
+   `.button:hover { --arrow }` further down matches at equal specificity and
+   would otherwise win on source order and grey the arrow back out. */
+.outline {
+  --accent: #f7f2f3; /* gray-900 — paints the door and the figure together */
+  --bg: transparent;
+  --text: #f7f2f3;
+  --arrow: #f7f2f3;
+  --doorway: #0a0809; /* the void past the door, as on .glass */
+  --knob: #ff2e43; /* brand-red-lit */
+  --focus: #9c2739; /* maroon-400 */
+  border: 1px solid rgba(156, 39, 57, 0.4); /* maroon-400/40 */
+  transition:
+    color 200ms,
+    border-color 200ms;
+}
+
+.outline.outline:hover:not([aria-busy="true"]):not([aria-disabled="true"]) {
+  --text: #ff2e43;
+  --arrow: #ff2e43;
+  --accent: #ff2e43;
+  /* The knob is red at rest; on a red door it inverts to stay visible. */
+  --knob: #20070b;
+  border-color: #8c1925; /* brand-red */
+}
+
+/* Header bar: sits on glass, so no fill of its own — black label with the
+   system red door and figure, turning red on hover with a thin red border to
+   match the other bar items. Declared after .button so the border wins. */
+.bar {
+  --accent: #8c1925;
+  --bg: transparent;
+  --text: #fff;
+  --arrow: #fff; /* matches the white bar text; still goes red on hover */
+  --doorway: #0a0809;
+  --knob: #0a0809; /* black handle — the door itself is the accent red */
+  --focus: #8c1925;
+  border: 1px solid transparent;
+  transition: transform 0.15s, background-color 0.15s, border-color 0.2s,
+    color 0.2s, box-shadow 0.2s;
+}
+
+.bar:hover:not([aria-busy="true"]):not([aria-disabled="true"]) {
+  --text: #8c1925;
+  border-color: #8c1925;
+  box-shadow: 0 0 14px -4px rgba(140, 25, 37, 0.9);
+}
+
+.brand:active {
+  --bg: #5e1622; /* maroon-600 */
+}
+
+.text {
+  white-space: nowrap;
+}
+
+/* Arrow between the label and the doorway — points the eye toward the exit,
+   leans forward on hover and trails off once the figure is walking. */
+.arrow {
+  display: flex;
+  align-items: center;
+  /* Own token so a variant can lift it off a dark fill if needed. */
+  color: var(--arrow, #0a0809);
+  transition: transform 0.3s, opacity 0.3s, color 0.2s;
+}
+
+/* Set on the button, not the arrow, so it lands on every variant at once.
+   The custom property itself does not animate, but `color` resolving from it
+   does — which is why the transition above is on the arrow. */
+.button:not([aria-busy="true"]):not([aria-disabled="true"]):hover {
+  --arrow: #8c1925;
+}
+
+.button[data-stage="idle"]:not([data-done]):hover .arrow {
+  transform: translateX(3px);
+}
+
+.button[data-stage="walking1"] .arrow,
+.button[data-stage="walking2"] .arrow,
+.button[data-stage="falling"] .arrow,
+.button[data-stage="closing"] .arrow,
+.button[data-done] .arrow {
+  transform: translateX(7px);
+  opacity: 0.3;
+}
+
+.icon {
+  display: block;
+  overflow: visible;
+}
+
+.doorway {
+  fill: var(--doorway);
+}
+
+/* ---------- Door ---------- */
+
+.door {
+  fill: var(--accent);
+  transform-box: view-box;
+  transform-origin: 44px 17px; /* hinge on the right edge */
+  /* fill rides along with the swing — a second `transition` declaration would
+     replace this one outright rather than adding to it. */
+  transition:
+    transform 350ms ease-in-out,
+    fill 200ms;
+}
+
+.knob {
+  fill: var(--knob);
+}
+
+/* ---------- Figure ---------- */
+
+.figure {
+  fill: var(--accent);
+  stroke: var(--accent);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform 350ms linear,
+    opacity 300ms,
+    fill 200ms,
+    stroke 200ms;
+}
+
+.figure line {
+  fill: none;
+  transform-box: view-box;
+}
+
+.legA,
+.legB {
+  transform-origin: 22.5px 20px;
+}
+
+.armA,
+.armB {
+  transform-origin: 23.6px 13px;
+}
+
+/* ---------- Hover: door cracks open, figure leans in ---------- */
+
+.button[data-stage="idle"]:not([data-done]):hover .door {
+  transform: scaleX(0.8);
+}
+
+.button[data-stage="idle"]:not([data-done]):hover .figure {
+  transform: translateX(2px);
+}
+
+/* ---------- Click sequence ---------- */
+
+.button[data-stage="walking1"] .figure {
+  transform: translateX(6px);
+}
+
+.button[data-stage="walking1"] .door {
+  transform: scaleX(0.5);
+}
+
+.button[data-stage="walking2"] .figure {
+  transform: translateX(14px);
+  transition-duration: 450ms;
+}
+
+.button[data-stage="walking2"] .door,
+.button[data-stage="falling"] .door {
+  transform: scaleX(0.12);
+}
+
+.button[data-stage="walking1"] .legA,
+.button[data-stage="walking2"] .legA,
+.button[data-stage="walking1"] .armB,
+.button[data-stage="walking2"] .armB {
+  animation: swing var(--walk) ease-in-out infinite alternate;
+}
+
+.button[data-stage="walking1"] .legB,
+.button[data-stage="walking2"] .legB,
+.button[data-stage="walking1"] .armA,
+.button[data-stage="walking2"] .armA {
+  animation: swing var(--walk) ease-in-out infinite alternate-reverse;
+}
+
+.button[data-stage="falling"] .figure {
+  transform: translate(14px, 30px) rotate(120deg);
+  transition: transform 600ms cubic-bezier(0.7, 0, 1, 1);
+}
+
+.button[data-stage="closing"] .figure,
+.button[data-done] .figure {
+  transform: translate(14px, 30px);
+  opacity: 0;
+  transition: none;
+}
+
+.button[data-stage="closing"] .door {
+  transform: scaleX(1);
+}
+
+@keyframes swing {
+  from {
+    transform: rotate(-22deg);
+  }
+  to {
+    transform: rotate(22deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .door,
+  .figure,
+  .arrow {
+    transition: none;
+  }
+}

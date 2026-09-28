@@ -1,0 +1,238 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #7b1e2c; /* maroon-500 */
+  --brand-dark: #5e1622; /* maroon-600 */
+  --ink: #0b0406; /* ink-900 */
+  color-scheme: dark;
+}
+
+/* The app's ground. Layered rather than a single ramp so the black reads as a
+   lit room instead of a flat fill: a warm key light spilling from behind the
+   header, a bounce in the opposite corner to keep the shadows from going dead,
+   then the base gradient. Fixed so it doesn't slide as the page scrolls.
+
+   Pitched at ScrollGlobe's #090203 so the page and the globe read as one
+   room. Both lights are now wine rather than the pink and violet they were —
+   those were lifting and cooling the black, which put the site a full stop
+   lighter than the globe sitting in the middle of it.
+
+   Mostly a fallback: MaroonDataWires paints an opaque canvas over this at
+   -z-10, so what shows through is the overscroll gutter and the no-JS case. */
+body {
+  min-height: 100vh;
+  background-color: #090203;
+  background-image:
+    radial-gradient(
+      75rem 34rem at 50% -14rem,
+      rgba(140, 25, 37, 0.16),
+      transparent 62%
+    ),
+    radial-gradient(
+      55rem 30rem at 88% 108%,
+      rgba(60, 14, 24, 0.14),
+      transparent 64%
+    ),
+    linear-gradient(180deg, #100608 0%, #0b0305 46%, #090203 100%);
+  background-attachment: fixed;
+  color: #f7f2f3;
+}
+
+/* shadcn/ui semantic tokens. HSL channels only — Tailwind wraps them as
+   hsl(var(--token)) so the /50 opacity modifiers keep working. Values are the
+   project's maroon/ink palette rather than shadcn's stock neutrals. */
+@layer base {
+  /* Dark by default — the app has no white surfaces. .dark below repeats these
+     so Tailwind's dark: variants and the theme toggle stay consistent. */
+  /* Every hue here sits on the brand's 348–351, so the neutrals are wine-tinted
+     rather than the cool greys they were. Lightness is pulled down to match the
+     globe's ground. */
+  :root {
+    --background: 351 64% 2%; /* ink-900 */
+    --foreground: 0 0% 98%;
+    /* Kept in step with the gray ladder in tailwind.config.ts: card/popover
+       are gray-100, border/input are gray-200. */
+    --card: 348 24% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 348 24% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 351 55% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 350 20% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 350 20% 12%;
+    --muted-foreground: 350 10% 62%;
+    --accent: 351 45% 17%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 350 30% 12%;
+    --input: 350 30% 12%;
+    --ring: 351 55% 45%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 351 64% 2%; /* ink-900 */
+    --foreground: 0 0% 98%;
+    --card: 348 24% 7%;
+    --card-foreground: 0 0% 98%;
+    --popover: 348 24% 7%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 351 55% 42%; /* lifted maroon, legible on ink */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 350 18% 11%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 350 18% 11%;
+    --muted-foreground: 350 10% 62%;
+    --accent: 351 45% 16%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 350 26% 13%;
+    --input: 350 26% 13%;
+    --ring: 351 55% 45%;
+  }
+}
+
+/* A real custom property, not just a variable: registering it with a type is
+   what lets the browser interpolate the angle. An unregistered --border-angle
+   would jump from 0deg to 360deg instead of sweeping. */
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes border-angle-spin {
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+@layer components {
+  /* The service cards' animated border. The conic gradient fills the whole
+     element, then the two-layer mask punches out everything inside the
+     padding box — what survives is a --ring-w edge carrying one bright arc
+     that travels around the card as the angle sweeps.
+
+     The element must not paint anything else: it sits over the card's glass,
+     so a fill here would be blurred into the surface by the backdrop-filter
+     below it. */
+  .glow-ring {
+    --ring-w: 1px;
+    padding: var(--ring-w);
+    background: conic-gradient(
+      from var(--border-angle),
+      transparent 0deg,
+      rgba(140, 25, 37, 0) 46deg,
+      #8c1925 86deg,
+      #ff2e43 102deg,
+      #ffd9dd 110deg,
+      #ff2e43 118deg,
+      #8c1925 134deg,
+      rgba(140, 25, 37, 0) 174deg,
+      transparent 360deg
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    animation: border-angle-spin 6s linear infinite;
+    /* Negative delays, set per card, start each arc at a different point in
+       the cycle so a row of cards doesn't pulse in lockstep. */
+    animation-delay: var(--ring-delay, 0s);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .glow-ring {
+      animation: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-rule-shine {
+      animation: none;
+    }
+  }
+}
+
+/* @tailwindcss/forms hard-codes a blue focus ring on every control.
+   Repoint it (and the native accent/selection colours) at the brand. */
+@layer base {
+  /* The forms plugin hard-codes a white fill on every control. */
+  [type='text'],
+  [type='email'],
+  [type='password'],
+  [type='number'],
+  [type='search'],
+  [type='date'],
+  select,
+  textarea {
+    background-color: #1a1012; /* gray-100 (raised surface) */
+    color: #f5f1f2;
+    border-color: #291619; /* gray-200 */
+  }
+
+  [type='text']:focus,
+  [type='email']:focus,
+  [type='password']:focus,
+  [type='number']:focus,
+  [type='search']:focus,
+  [type='date']:focus,
+  select:focus,
+  textarea:focus {
+    --tw-ring-color: var(--brand);
+    border-color: var(--brand);
+    outline-color: var(--brand);
+  }
+
+  [type='checkbox'],
+  [type='radio'] {
+    accent-color: var(--brand);
+  }
+
+  [type='checkbox']:checked,
+  [type='radio']:checked {
+    background-color: var(--brand);
+    border-color: var(--brand);
+  }
+
+  [type='checkbox']:focus,
+  [type='radio']:focus {
+    --tw-ring-color: var(--brand);
+  }
+
+  ::selection {
+    background-color: var(--brand);
+    color: #fff;
+  }
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* reCAPTCHA v3 floats its badge in the bottom-right corner, which is where the
+   voice widget lives. Google permits hiding it only if the attribution it
+   carries is shown instead — the widget panel prints that line. */
+.grecaptcha-badge {
+  visibility: hidden;
+}
