@@ -175,7 +175,7 @@ export function Header() {
                                                 <li key={i}>
                                                     <NavigationMenuLink
                                                         href={item.href}
-                                                        className="flex p-2 hover:bg-accent flex-row rounded-md items-center gap-x-2"
+                                                        className="flex p-2 flex-row rounded-lg border border-transparent items-center gap-x-2 transition-colors hover:border-brand-red focus-visible:border-brand-red"
                                                     >
                                                         <item.icon className="text-foreground size-4" />
                                                         <span className="font-medium">{item.title}</span>
@@ -299,7 +299,7 @@ function ListItem({
     ...props
 }: React.ComponentProps<typeof NavigationMenuLink> & LinkItem) {
     return (
-        <NavigationMenuLink className={cn('w-full flex flex-row gap-x-2 data-[active=true]:focus:bg-accent data-[active=true]:hover:bg-accent data-[active=true]:bg-accent/50 data-[active=true]:text-accent-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground rounded-sm p-2', className)} {...props} asChild>
+        <NavigationMenuLink className={cn('w-full flex flex-row gap-x-2 rounded-lg border border-transparent p-2 transition-colors hover:border-brand-red focus-visible:border-brand-red data-[active=true]:border-brand-red data-[active=true]:bg-accent/50 data-[active=true]:text-accent-foreground', className)} {...props} asChild>
             <a href={href}>
                 <div className="bg-background/40 flex aspect-square size-12 items-center justify-center rounded-md border shadow-sm">
                     <Icon className="text-foreground size-5" />

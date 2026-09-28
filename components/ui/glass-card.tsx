@@ -104,16 +104,19 @@ type CardSectionProps = {
   eyebrow?: string;
   description?: string;
   items: CardItem[];
+  /** Rendered between the heading and the card row — e.g. the explorer. */
+  children?: React.ReactNode;
   className?: string;
 };
 
-/** Centred heading over a row of three glass cards. */
+/** Centred heading, an optional block of its own, then a row of three cards. */
 export default function CardSection({
   id,
   title,
   eyebrow,
   description,
   items,
+  children,
   className,
 }: CardSectionProps) {
   const headingId = `${id}-heading`;
@@ -131,6 +134,8 @@ export default function CardSection({
         description={description}
         className="mb-16"
       />
+
+      {children}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {items.map((item, i) => (

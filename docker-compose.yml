@@ -2,8 +2,64 @@
 #
 #   docker compose up -d
 #
-# The credentials here are deliberately boring and local-only — they match the
-# DATABASE_URL in .env. Nothing in this file should ever hold a real secret.
+# The app runs on the host: `pnpm dev`, reading DATABASE_URL from .env
+# (localhost:5433).
+#
+# The credentials here are deliberately boring and local-only. Nothing in this
+# file should ever hold a real secret — those come from .env at run time.
+#
+# -----------------------------------------------------------------------------
+# Running the app in Docker too — kept for later, currently disabled.
+# -----------------------------------------------------------------------------
+# To re-enable: uncomment the `app:` block below, then
+#
+#   docker compose up -d --build     # first run, or after changing deps
+#   docker compose logs -f app       # watch the dev server
+#
+# Three things that must move with it:
+#   1. Dockerfile.dev and .dockerignore are still on disk and still correct.
+#   2. next.config.ts has the matching `watchOptions` block commented out; it
+#      is what DOCKER_DEV below switches on.
+#   3. Hot reload never worked through the Windows bind mount even with
+#      polling — edits needed `docker compose restart app`. Docker Desktop's
+#      synchronized file shares is the thing to try before re-enabling.
+#
+# services:
+#   app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile.dev
+#     container_name: nextjs-dashboard-app
+#     restart: unless-stopped
+#     ports:
+#       - '3000:3000'
+#     env_file:
+#       # AUTH_SECRET and the legacy POSTGRES_URL. DATABASE_URL is in here too
+#       # but is overridden below — `environment` wins over `env_file`.
+#       - .env
+#     environment:
+#       # Inside the compose network the database is `postgres:5432`. The
+#       # host's localhost:5433 mapping does not exist in here, and `localhost`
+#       # would resolve to this container itself.
+#       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nextjs_dashboard
+#       # Turns on watchOptions.pollIntervalMs in next.config.ts. Windows bind
+#       # mounts deliver no inotify events into Linux, so without polling the
+#       # dev server never sees an edit.
+#       DOCKER_DEV: 'true'
+#     volumes:
+#       # Source is mounted so edits on the host reload in the container.
+#       - .:/app
+#       # Anonymous volumes shadow the mount for these two: node_modules must
+#       # stay the Linux build from the image, and .next must not be shared with
+#       # a host dev server writing Windows paths into it.
+#       - /app/node_modules
+#       - /app/.next
+#     depends_on:
+#       postgres:
+#         # Waits for pg_isready, not merely for the container to start —
+#         # otherwise the first query races Postgres's startup.
+#         condition: service_healthy
+
 services:
   postgres:
     image: postgres:17-alpine

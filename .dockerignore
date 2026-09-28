@@ -1,0 +1,16 @@
+# node_modules is built for the host OS — bcrypt in particular ships a native
+# .node binary that will not load on Linux. The image installs its own.
+node_modules
+.next
+.git
+.vercel
+dist
+
+# Secrets are passed in through compose's env_file at run time, never baked
+# into an image layer.
+.env
+.env*.local
+
+npm-debug.log*
+*.tsbuildinfo
+next-env.d.ts

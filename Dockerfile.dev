@@ -1,0 +1,31 @@
+# Development image: runs `next dev` with hot reload, so the source is bind
+# mounted rather than baked in. For a deployable image you'd want a separate
+# multi-stage Dockerfile doing `next build` against output: 'standalone'.
+#
+# Node 26 to match the host: the seed script runs `node src/prisma/seed.ts`
+# directly, which relies on native TypeScript stripping.
+FROM node:26-bookworm-slim
+
+# bcrypt ships prebuilt binaries, but falls back to compiling from source when
+# none match the platform — these are what that fallback needs. Debian rather
+# than Alpine for the same reason: the prebuilds are glibc, not musl.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g pnpm@12.4.2
+
+WORKDIR /app
+
+# Manifests first: this layer is cached and only reinstalls when a dependency
+# actually changes, not on every source edit.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+
+EXPOSE 3000
+
+# -H 0.0.0.0 is required. Bound to localhost, the server would only be
+# reachable from inside the container and the published port would go nowhere.
+CMD ["pnpm", "exec", "next", "dev", "-H", "0.0.0.0", "-p", "3000"]

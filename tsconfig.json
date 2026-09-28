@@ -7,6 +7,9 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
+    // src/prisma/seed.ts runs directly under `node src/prisma/seed.ts`, and
+    // Node's ESM resolver requires the explicit .ts extension on its import.
+    "allowImportingTsExtensions": true,
     "module": "preserve",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,

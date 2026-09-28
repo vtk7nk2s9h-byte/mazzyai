@@ -8,9 +8,12 @@ import {
   ShieldCheck,
   UserRound,
   Zap,
+  ArrowUpRight,
+  Phone
 } from 'lucide-react';
 
 import CardSection, { type CardItem } from '@/components/ui/glass-card';
+import UseCaseExplorer from '@/components/ui/use-case-explorer';
 
 // Placeholder copy throughout — the shape is right, the words are yours.
 
@@ -38,23 +41,24 @@ const features: CardItem[] = [
 const useCases: CardItem[] = [
   {
     icon: Briefcase,
-    title: 'Agencies & studios',
+    title: 'Upgrade Your Business',
     description:
-      'Retainers, milestones and project budgets in one ledger, with per-client views you can hand over without redacting a thing.',
+      'A voice that answers on the first ring, knows your prices, hours and policies, and never puts a caller on hold — a front desk your size of business could not otherwise staff.',
   },
   {
-    icon: Building2,
-    title: 'Finance teams',
+    icon: Phone,
+    title: 'Log All Incoming Calls',
     description:
-      'Month-end close without the spreadsheet relay: one source of truth, an audit trail on every edit, exports that reconcile.',
+      'Every call arrives written down: who rang, what they wanted and what was agreed, summarised in your inbox so nothing survives only in someone’s memory.',
   },
   {
-    icon: UserRound,
-    title: 'Independents',
+    icon: ArrowUpRight,
+    title: 'Boost Your Growth',
     description:
-      'Send a professional invoice in under a minute and know exactly what is owed, by whom, and how late it has become.',
+      'The calls you miss today are bookings someone else takes. Answering all of them, at any hour, turns enquiries into appointments and orders into repeat customers.',
   },
 ];
+
 
 const services: CardItem[] = [
   {
@@ -98,9 +102,11 @@ export function UseCasesSection() {
       id="use-cases"
       eyebrow="Who it is for"
       title="Use cases"
-      description="The same ledger, shaped around how different teams actually bill."
+      description="Explore different use cases tailored to your business."
       items={useCases}
-    />
+    >
+      <UseCaseExplorer />
+    </CardSection>
   );
 }
 
