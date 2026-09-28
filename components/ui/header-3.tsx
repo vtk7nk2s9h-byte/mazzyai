@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
 import ThemeToggle from '@/app/ui/theme-toggle';
-import DoorButton from '@/app/ui/log-out-button';
+import LogoutButton from '@/app/ui/log-out-button';
 import { useRouter } from 'next/navigation';
 import { bowlby, inter } from '@/app/ui/fonts';
 import { createPortal } from 'react-dom';
@@ -203,7 +203,7 @@ export function Header() {
                         root layout and survives the navigation, so the button
                         has to reset itself — resetAfter does that, and it is
                         back to idle long before the user navigates back. */}
-                    <DoorButton
+                    <LogoutButton
                         label="Log in"
                         variant="bar"
                         onStartAction={() => router.push('/login')}
@@ -243,7 +243,7 @@ export function Header() {
                     </div>
                 </NavigationMenu>
                 <div className="flex flex-col gap-2">
-                    <DoorButton
+                    <LogoutButton
                         label="Log in"
                         variant="brand"
                         onStartAction={() => {
