@@ -7,18 +7,26 @@
 export function Section({
   title,
   description,
+  action,
   children,
 }: {
   title: string;
   description?: string;
+  /** Sits at the right of the header, e.g. an edit button. */
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section className="rounded-lg bg-gray-50 p-5">
-      <h2 className="text-sm font-medium text-gray-900">{title}</h2>
-      {description && (
-        <p className="mt-0.5 text-xs text-gray-500">{description}</p>
-      )}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-medium text-gray-900">{title}</h2>
+          {description && (
+            <p className="mt-0.5 text-xs text-gray-500">{description}</p>
+          )}
+        </div>
+        {action}
+      </div>
       <dl className="mt-4 space-y-0">{children}</dl>
     </section>
   );
@@ -51,7 +59,18 @@ export function Field({
 /** A setting that is either on or off, shown as a word rather than a checkbox. */
 export function Toggle({ on }: { on: boolean }) {
   return (
-    <span className={on ? 'text-gray-900' : 'text-gray-400'}>
+    <span
+      className={`inline-flex items-center gap-2 ${on ? 'text-gray-900' : 'text-gray-400'}`}
+    >
+      <span
+        aria-hidden
+        className={`h-1.5 w-1.5 rounded-full ${
+          on
+            ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]'
+            : 'bg-brand-red-lit shadow-[0_0_8px_rgba(255,46,67,0.8)]'
+        }`}
+      />
+
       {on ? 'Enabled' : 'Disabled'}
     </span>
   );

@@ -4,7 +4,14 @@ import bcrypt from 'bcrypt';
 import { AuthError } from 'next-auth';
 import { z } from 'zod';
 
-import { signIn } from '@/auth';
+import {
+  ADMIN_ACCOUNT_EMAIL,
+  auth,
+  hasRole,
+  signIn,
+  signSwitch,
+  type SessionUser,
+} from '@/auth';
 import { db } from '@/src/prisma/db';
 
 // Work factor 12: ~250ms per hash on commodity hardware. High enough that a
@@ -161,4 +168,35 @@ export async function requestEmailCode(
     email: parsed.data.email,
     message: 'Check your email for a 6-digit code (and a sign-in link).',
   };
+}
+
+/**
+ * One-click switch behind the sidebar's profile banner: a superuser steps into
+ * the admin account, and from there steps back.
+ *
+ * Who may do what is decided here, from the session, not from anything the
+ * form posts: a superuser can go to ADMIN_ACCOUNT_EMAIL, and an account that
+ * was reached this way can go back to the superuser recorded in its own
+ * encrypted session. An admin who simply logged in has neither, so this cannot
+ * be used to climb to superuser.
+ */
+export async function switchAccountAction() {
+  const me = (await auth())?.user as SessionUser | undefined;
+  if (!me?.id) return;
+
+  let token: string;
+  if (me.impersonatorId) {
+    token = signSwitch({ toId: me.impersonatorId });
+  } else if (hasRole(me.role, 'SUPERUSER')) {
+    const admin = await db.orm.public.User.where({ email: ADMIN_ACCOUNT_EMAIL })
+      .select('id')
+      .first();
+    if (!admin) return;
+    token = signSwitch({ toId: admin.id, impersonatorId: me.id });
+  } else {
+    return;
+  }
+
+  // Throws NEXT_REDIRECT on success, so it stays outside any try/catch.
+  await signIn('switch-account', { token, redirectTo: '/dashboard' });
 }

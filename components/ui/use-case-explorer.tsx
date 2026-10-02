@@ -17,7 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from "@/app/lib/utils.ts"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -726,6 +726,16 @@ const categories: Category[] = [
     ],
   },
 ];
+
+/**
+ * The sector → business choices this selector offers, names only, so a form
+ * (the Create organization dialog) can offer the same industries without
+ * copying the list.
+ */
+export const industryOptions = categories.map((c) => ({
+  sector: c.label,
+  businesses: c.businesses.map((b) => b.name),
+}));
 
 
 /**

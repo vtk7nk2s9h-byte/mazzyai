@@ -24,14 +24,6 @@
       "model": "AuditLog",
       "namespace": "public"
     },
-    "businessHour": {
-      "model": "BusinessHour",
-      "namespace": "public"
-    },
-    "businessHourException": {
-      "model": "BusinessHourException",
-      "namespace": "public"
-    },
     "call": {
       "model": "Call",
       "namespace": "public"
@@ -72,6 +64,10 @@
       "model": "KnowledgeDocument",
       "namespace": "public"
     },
+    "meeting": {
+      "model": "Meeting",
+      "namespace": "public"
+    },
     "membership": {
       "model": "Membership",
       "namespace": "public"
@@ -82,10 +78,6 @@
     },
     "organization": {
       "model": "Organization",
-      "namespace": "public"
-    },
-    "organizationLocation": {
-      "model": "OrganizationLocation",
       "namespace": "public"
     },
     "phoneNumber": {
@@ -133,20 +125,24 @@
             "codecId": "pg/text@1",
             "members": [
               {
-                "name": "DRAFT",
-                "value": "DRAFT"
+                "name": "IDLE",
+                "value": "IDLE"
               },
               {
-                "name": "PUBLISHED",
-                "value": "PUBLISHED"
+                "name": "READY",
+                "value": "READY"
+              },
+              {
+                "name": "ACTIVE",
+                "value": "ACTIVE"
               },
               {
                 "name": "PAUSED",
                 "value": "PAUSED"
               },
               {
-                "name": "ARCHIVED",
-                "value": "ARCHIVED"
+                "name": "DISACTIVATED",
+                "value": "DISACTIVATED"
               }
             ]
           },
@@ -335,6 +331,23 @@
               }
             ]
           },
+          "MeetingStatus": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "SCHEDULED",
+                "value": "SCHEDULED"
+              },
+              {
+                "name": "COMPLETED",
+                "value": "COMPLETED"
+              },
+              {
+                "name": "CANCELLED",
+                "value": "CANCELLED"
+              }
+            ]
+          },
           "MembershipStatus": {
             "codecId": "pg/text@1",
             "members": [
@@ -424,10 +437,6 @@
               {
                 "name": "SUSPENDED",
                 "value": "SUSPENDED"
-              },
-              {
-                "name": "CHURNED",
-                "value": "CHURNED"
               }
             ]
           },
@@ -485,8 +494,8 @@
                 "value": "USER"
               },
               {
-                "name": "SUPPORT",
-                "value": "SUPPORT"
+                "name": "ADMIN",
+                "value": "ADMIN"
               },
               {
                 "name": "SUPERUSER",
@@ -1473,198 +1482,6 @@
               },
               "namespaceId": "public",
               "table": "auditLog"
-            }
-          },
-          "BusinessHour": {
-            "fields": {
-              "closesAt": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "id": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "isClosed": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/bool@1",
-                  "kind": "scalar"
-                }
-              },
-              "locationId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "opensAt": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "weekday": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                },
-                "valueSet": {
-                  "entityKind": "enum",
-                  "entityName": "Weekday",
-                  "namespaceId": "public",
-                  "plane": "domain"
-                }
-              }
-            },
-            "relations": {
-              "location": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "locationId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "OrganizationLocation",
-                  "namespace": "public"
-                }
-              }
-            },
-            "storage": {
-              "fields": {
-                "closesAt": {
-                  "column": "closesAt"
-                },
-                "id": {
-                  "column": "id"
-                },
-                "isClosed": {
-                  "column": "isClosed"
-                },
-                "locationId": {
-                  "column": "locationId"
-                },
-                "opensAt": {
-                  "column": "opensAt"
-                },
-                "weekday": {
-                  "column": "weekday"
-                }
-              },
-              "namespaceId": "public",
-              "table": "businessHour"
-            }
-          },
-          "BusinessHourException": {
-            "fields": {
-              "closesAt": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "date": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/date-string@1",
-                  "kind": "scalar"
-                }
-              },
-              "id": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "isClosed": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/bool@1",
-                  "kind": "scalar"
-                }
-              },
-              "locationId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "opensAt": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "reason": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              }
-            },
-            "relations": {
-              "location": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "locationId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "OrganizationLocation",
-                  "namespace": "public"
-                }
-              }
-            },
-            "storage": {
-              "fields": {
-                "closesAt": {
-                  "column": "closesAt"
-                },
-                "date": {
-                  "column": "date"
-                },
-                "id": {
-                  "column": "id"
-                },
-                "isClosed": {
-                  "column": "isClosed"
-                },
-                "locationId": {
-                  "column": "locationId"
-                },
-                "opensAt": {
-                  "column": "opensAt"
-                },
-                "reason": {
-                  "column": "reason"
-                }
-              },
-              "namespaceId": "public",
-              "table": "businessHourException"
             }
           },
           "Call": {
@@ -3319,6 +3136,160 @@
               "table": "knowledgeDocument"
             }
           },
+          "Meeting": {
+            "fields": {
+              "allDay": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "attendeeName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "endsAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "location": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "organizationId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "startsAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                },
+                "valueSet": {
+                  "entityKind": "enum",
+                  "entityName": "MeetingStatus",
+                  "namespaceId": "public",
+                  "plane": "domain"
+                }
+              },
+              "title": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "organization": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "organizationId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Organization",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "allDay": {
+                  "column": "allDay"
+                },
+                "attendeeName": {
+                  "column": "attendeeName"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "endsAt": {
+                  "column": "endsAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "location": {
+                  "column": "location"
+                },
+                "organizationId": {
+                  "column": "organizationId"
+                },
+                "startsAt": {
+                  "column": "startsAt"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "meeting"
+            }
+          },
           "Membership": {
             "fields": {
               "createdAt": {
@@ -3682,6 +3653,13 @@
                   "kind": "scalar"
                 }
               },
+              "email": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -3738,6 +3716,13 @@
                   "kind": "scalar"
                 }
               },
+              "phone": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "plan": {
                 "nullable": false,
                 "type": {
@@ -3749,6 +3734,13 @@
                   "entityName": "Plan",
                   "namespaceId": "public",
                   "plane": "domain"
+                }
+              },
+              "postalCode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
                 }
               },
               "recordCalls": {
@@ -3950,7 +3942,7 @@
                   "namespace": "public"
                 }
               },
-              "locations": {
+              "meetings": {
                 "cardinality": "1:N",
                 "on": {
                   "localFields": [
@@ -3961,7 +3953,7 @@
                   ]
                 },
                 "to": {
-                  "model": "OrganizationLocation",
+                  "model": "Meeting",
                   "namespace": "public"
                 }
               },
@@ -4065,6 +4057,9 @@
                 "description": {
                   "column": "description"
                 },
+                "email": {
+                  "column": "email"
+                },
                 "id": {
                   "column": "id"
                 },
@@ -4089,8 +4084,14 @@
                 "notificationEmail": {
                   "column": "notificationEmail"
                 },
+                "phone": {
+                  "column": "phone"
+                },
                 "plan": {
                   "column": "plan"
+                },
+                "postalCode": {
+                  "column": "postalCode"
                 },
                 "recordCalls": {
                   "column": "recordCalls"
@@ -4119,249 +4120,6 @@
               },
               "namespaceId": "public",
               "table": "organization"
-            }
-          },
-          "OrganizationLocation": {
-            "fields": {
-              "addressLine1": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "addressLine2": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "city": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "country": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "createdAt": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "kind": "scalar"
-                }
-              },
-              "email": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "id": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "isPrimary": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/bool@1",
-                  "kind": "scalar"
-                }
-              },
-              "label": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "latitude": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/float8@1",
-                  "kind": "scalar"
-                }
-              },
-              "longitude": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/float8@1",
-                  "kind": "scalar"
-                }
-              },
-              "organizationId": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "phone": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "postalCode": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "region": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "timezone": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "updatedAt": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "kind": "scalar"
-                }
-              }
-            },
-            "relations": {
-              "businessHours": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "locationId"
-                  ]
-                },
-                "to": {
-                  "model": "BusinessHour",
-                  "namespace": "public"
-                }
-              },
-              "hoursExceptions": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "locationId"
-                  ]
-                },
-                "to": {
-                  "model": "BusinessHourException",
-                  "namespace": "public"
-                }
-              },
-              "organization": {
-                "cardinality": "N:1",
-                "nullable": false,
-                "on": {
-                  "localFields": [
-                    "organizationId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "Organization",
-                  "namespace": "public"
-                }
-              },
-              "phoneNumbers": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "locationId"
-                  ]
-                },
-                "to": {
-                  "model": "PhoneNumber",
-                  "namespace": "public"
-                }
-              }
-            },
-            "storage": {
-              "fields": {
-                "addressLine1": {
-                  "column": "addressLine1"
-                },
-                "addressLine2": {
-                  "column": "addressLine2"
-                },
-                "city": {
-                  "column": "city"
-                },
-                "country": {
-                  "column": "country"
-                },
-                "createdAt": {
-                  "column": "createdAt"
-                },
-                "email": {
-                  "column": "email"
-                },
-                "id": {
-                  "column": "id"
-                },
-                "isPrimary": {
-                  "column": "isPrimary"
-                },
-                "label": {
-                  "column": "label"
-                },
-                "latitude": {
-                  "column": "latitude"
-                },
-                "longitude": {
-                  "column": "longitude"
-                },
-                "organizationId": {
-                  "column": "organizationId"
-                },
-                "phone": {
-                  "column": "phone"
-                },
-                "postalCode": {
-                  "column": "postalCode"
-                },
-                "region": {
-                  "column": "region"
-                },
-                "timezone": {
-                  "column": "timezone"
-                },
-                "updatedAt": {
-                  "column": "updatedAt"
-                }
-              },
-              "namespaceId": "public",
-              "table": "organizationLocation"
             }
           },
           "PhoneNumber": {
@@ -4409,13 +4167,6 @@
                 }
               },
               "label": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "locationId": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
@@ -4490,22 +4241,6 @@
                   "namespace": "public"
                 }
               },
-              "location": {
-                "cardinality": "N:1",
-                "nullable": true,
-                "on": {
-                  "localFields": [
-                    "locationId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "OrganizationLocation",
-                  "namespace": "public"
-                }
-              },
               "organization": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -4545,9 +4280,6 @@
                 },
                 "label": {
                   "column": "label"
-                },
-                "locationId": {
-                  "column": "locationId"
                 },
                 "monthlyCostCents": {
                   "column": "monthlyCostCents"
@@ -5662,8 +5394,8 @@
             "agent": {
               "checks": [
                 {
-                  "expression": "\"status\" IN ('DRAFT', 'PUBLISHED', 'PAUSED', 'ARCHIVED')",
-                  "name": "agent_status_check_2ec73821",
+                  "expression": "\"status\" IN ('IDLE', 'READY', 'ACTIVE', 'PAUSED', 'DISACTIVATED')",
+                  "name": "agent_status_check_fa782b36",
                   "prefix": "agent_status_check"
                 }
               ],
@@ -5721,7 +5453,7 @@
                   "codecId": "pg/text@1",
                   "default": {
                     "kind": "literal",
-                    "value": "DRAFT"
+                    "value": "IDLE"
                   },
                   "nativeType": "text",
                   "nullable": false,
@@ -6297,184 +6029,6 @@
                 ]
               },
               "uniques": []
-            },
-            "businessHour": {
-              "checks": [
-                {
-                  "expression": "\"weekday\" IN ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY')",
-                  "name": "businessHour_weekday_check_fe15739f",
-                  "prefix": "businessHour_weekday_check"
-                }
-              ],
-              "columns": {
-                "closesAt": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "id": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "isClosed": {
-                  "codecId": "pg/bool@1",
-                  "default": {
-                    "kind": "literal",
-                    "value": false
-                  },
-                  "nativeType": "bool",
-                  "nullable": false
-                },
-                "locationId": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "opensAt": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "weekday": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false,
-                  "valueSet": {
-                    "entityKind": "valueSet",
-                    "entityName": "Weekday",
-                    "namespaceId": "public",
-                    "plane": "storage"
-                  }
-                }
-              },
-              "foreignKeys": [
-                {
-                  "onDelete": "cascade",
-                  "source": {
-                    "columns": [
-                      "locationId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "businessHour"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "organizationLocation"
-                  }
-                }
-              ],
-              "indexes": [
-                {
-                  "columns": [
-                    "locationId"
-                  ],
-                  "name": "businessHour_locationId_idx_7aae3038",
-                  "prefix": "businessHour_locationId_idx",
-                  "unique": false
-                }
-              ],
-              "primaryKey": {
-                "columns": [
-                  "id"
-                ]
-              },
-              "uniques": [
-                {
-                  "columns": [
-                    "locationId",
-                    "weekday"
-                  ]
-                }
-              ]
-            },
-            "businessHourException": {
-              "columns": {
-                "closesAt": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "date": {
-                  "codecId": "pg/date-string@1",
-                  "nativeType": "date",
-                  "nullable": false
-                },
-                "id": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "isClosed": {
-                  "codecId": "pg/bool@1",
-                  "default": {
-                    "kind": "literal",
-                    "value": true
-                  },
-                  "nativeType": "bool",
-                  "nullable": false
-                },
-                "locationId": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "opensAt": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "reason": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                }
-              },
-              "foreignKeys": [
-                {
-                  "onDelete": "cascade",
-                  "source": {
-                    "columns": [
-                      "locationId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "businessHourException"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "organizationLocation"
-                  }
-                }
-              ],
-              "indexes": [
-                {
-                  "columns": [
-                    "locationId"
-                  ],
-                  "name": "businessHourException_locationId_idx_7aae3038",
-                  "prefix": "businessHourException_locationId_idx",
-                  "unique": false
-                }
-              ],
-              "primaryKey": {
-                "columns": [
-                  "id"
-                ]
-              },
-              "uniques": [
-                {
-                  "columns": [
-                    "locationId",
-                    "date"
-                  ]
-                }
-              ]
             },
             "call": {
               "checks": [
@@ -7878,6 +7432,139 @@
               },
               "uniques": []
             },
+            "meeting": {
+              "checks": [
+                {
+                  "expression": "\"status\" IN ('SCHEDULED', 'COMPLETED', 'CANCELLED')",
+                  "name": "meeting_status_check_9eaa8e3a",
+                  "prefix": "meeting_status_check"
+                }
+              ],
+              "columns": {
+                "allDay": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "attendeeName": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "endsAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "location": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "organizationId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "startsAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "SCHEDULED"
+                  },
+                  "nativeType": "text",
+                  "nullable": false,
+                  "valueSet": {
+                    "entityKind": "valueSet",
+                    "entityName": "MeetingStatus",
+                    "namespaceId": "public",
+                    "plane": "storage"
+                  }
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "organizationId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "meeting"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "organization"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "organizationId"
+                  ],
+                  "name": "meeting_organizationId_idx_2e17ef41",
+                  "prefix": "meeting_organizationId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "organizationId",
+                    "startsAt"
+                  ],
+                  "name": "meeting_organizationId_startsAt_idx_4d98ff60",
+                  "prefix": "meeting_organizationId_startsAt_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "membership": {
               "checks": [
                 {
@@ -8215,8 +7902,8 @@
                   "prefix": "organization_plan_check"
                 },
                 {
-                  "expression": "\"status\" IN ('TRIAL', 'ACTIVE', 'PAST_DUE', 'SUSPENDED', 'CHURNED')",
-                  "name": "organization_status_check_6c5f8c18",
+                  "expression": "\"status\" IN ('TRIAL', 'ACTIVE', 'PAST_DUE', 'SUSPENDED')",
+                  "name": "organization_status_check_22b8e8b2",
                   "prefix": "organization_status_check"
                 }
               ],
@@ -8264,6 +7951,11 @@
                   "nullable": true
                 },
                 "description": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "email": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": true
@@ -8320,6 +8012,11 @@
                   "nativeType": "text",
                   "nullable": true
                 },
+                "phone": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "plan": {
                   "codecId": "pg/text@1",
                   "default": {
@@ -8334,6 +8031,11 @@
                     "namespaceId": "public",
                     "plane": "storage"
                   }
+                },
+                "postalCode": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "recordCalls": {
                   "codecId": "pg/bool@1",
@@ -8431,138 +8133,6 @@
                 }
               ]
             },
-            "organizationLocation": {
-              "columns": {
-                "addressLine1": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "addressLine2": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "city": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "country": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "createdAt": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "default": {
-                    "expression": "now()",
-                    "kind": "function"
-                  },
-                  "nativeType": "timestamptz",
-                  "nullable": false
-                },
-                "email": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "id": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "isPrimary": {
-                  "codecId": "pg/bool@1",
-                  "default": {
-                    "kind": "literal",
-                    "value": false
-                  },
-                  "nativeType": "bool",
-                  "nullable": false
-                },
-                "label": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "latitude": {
-                  "codecId": "pg/float8@1",
-                  "nativeType": "float8",
-                  "nullable": true
-                },
-                "longitude": {
-                  "codecId": "pg/float8@1",
-                  "nativeType": "float8",
-                  "nullable": true
-                },
-                "organizationId": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "phone": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "postalCode": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "region": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "timezone": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": false
-                },
-                "updatedAt": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "nativeType": "timestamptz",
-                  "nullable": false
-                }
-              },
-              "foreignKeys": [
-                {
-                  "onDelete": "cascade",
-                  "source": {
-                    "columns": [
-                      "organizationId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "organizationLocation"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "organization"
-                  }
-                }
-              ],
-              "indexes": [
-                {
-                  "columns": [
-                    "organizationId"
-                  ],
-                  "name": "organizationLocation_organizationId_idx_2e17ef41",
-                  "prefix": "organizationLocation_organizationId_idx",
-                  "unique": false
-                }
-              ],
-              "primaryKey": {
-                "columns": [
-                  "id"
-                ]
-              },
-              "uniques": []
-            },
             "phoneNumber": {
               "columns": {
                 "agentId": {
@@ -8600,11 +8170,6 @@
                   "nullable": false
                 },
                 "label": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "locationId": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": true
@@ -8665,23 +8230,6 @@
                   "onDelete": "setNull",
                   "source": {
                     "columns": [
-                      "locationId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "phoneNumber"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "organizationLocation"
-                  }
-                },
-                {
-                  "onDelete": "setNull",
-                  "source": {
-                    "columns": [
                       "agentId"
                     ],
                     "namespaceId": "public",
@@ -8703,14 +8251,6 @@
                   ],
                   "name": "phoneNumber_agentId_idx_8d0ba4f0",
                   "prefix": "phoneNumber_agentId_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
-                    "locationId"
-                  ],
-                  "name": "phoneNumber_locationId_idx_7aae3038",
-                  "prefix": "phoneNumber_locationId_idx",
                   "unique": false
                 },
                 {
@@ -9166,8 +8706,8 @@
                   "prefix": "user_status_check"
                 },
                 {
-                  "expression": "\"systemRole\" IN ('USER', 'SUPPORT', 'SUPERUSER')",
-                  "name": "user_systemRole_check_5e322df2",
+                  "expression": "\"systemRole\" IN ('USER', 'ADMIN', 'SUPERUSER')",
+                  "name": "user_systemRole_check_95cc392b",
                   "prefix": "user_systemRole_check"
                 }
               ],
@@ -9417,10 +8957,11 @@
             "AgentStatus": {
               "kind": "valueSet",
               "values": [
-                "DRAFT",
-                "PUBLISHED",
+                "IDLE",
+                "READY",
+                "ACTIVE",
                 "PAUSED",
-                "ARCHIVED"
+                "DISACTIVATED"
               ]
             },
             "AuditActorType": {
@@ -9503,6 +9044,14 @@
                 "TEXT"
               ]
             },
+            "MeetingStatus": {
+              "kind": "valueSet",
+              "values": [
+                "SCHEDULED",
+                "COMPLETED",
+                "CANCELLED"
+              ]
+            },
             "MembershipStatus": {
               "kind": "valueSet",
               "values": [
@@ -9538,8 +9087,7 @@
                 "TRIAL",
                 "ACTIVE",
                 "PAST_DUE",
-                "SUSPENDED",
-                "CHURNED"
+                "SUSPENDED"
               ]
             },
             "Plan": {
@@ -9565,7 +9113,7 @@
               "kind": "valueSet",
               "values": [
                 "USER",
-                "SUPPORT",
+                "ADMIN",
                 "SUPERUSER"
               ]
             },
@@ -9610,10 +9158,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "7db5a1b4f6b0ae5249528ea7713df8c022401cd84b73e9eb2023973bd1ae8186"
+    "storageHash": "381b5b45d284c2cf22da536fdcbbe75468e64c57fed16e71daf800fe60245ce5"
   },
   "execution": {
-    "executionHash": "7efeff7dd1d3416b74a3d86d232234921698b2fe59f6ffdcac489bbd35520aa0",
+    "executionHash": "6760a6d2226f0147d871bacc92b5a9d27c99e201a0e2690431c2755fedd03529",
     "mutations": {
       "defaults": [
         {
@@ -9684,28 +9232,6 @@
             "column": "id",
             "namespace": "public",
             "table": "auditLog"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "uuidv4",
-            "kind": "generator"
-          },
-          "ref": {
-            "column": "id",
-            "namespace": "public",
-            "table": "businessHour"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "uuidv4",
-            "kind": "generator"
-          },
-          "ref": {
-            "column": "id",
-            "namespace": "public",
-            "table": "businessHourException"
           }
         },
         {
@@ -9856,6 +9382,32 @@
           "ref": {
             "column": "id",
             "namespace": "public",
+            "table": "meeting"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "meeting"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
             "table": "membership"
           }
         },
@@ -9894,32 +9446,6 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "organization"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "uuidv4",
-            "kind": "generator"
-          },
-          "ref": {
-            "column": "id",
-            "namespace": "public",
-            "table": "organizationLocation"
-          }
-        },
-        {
-          "onCreate": {
-            "id": "timestampNow",
-            "kind": "generator"
-          },
-          "onUpdate": {
-            "id": "timestampNow",
-            "kind": "generator"
-          },
-          "ref": {
-            "column": "updatedAt",
-            "namespace": "public",
-            "table": "organizationLocation"
           }
         },
         {

@@ -10,28 +10,21 @@ import {
   CallStatusBadge,
   SentimentDot,
 } from '@/app/ui/call-logs/status';
-import { ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon } from '@heroicons/react/24/outline';
 
 /**
- * Caller name with a small arrow that opens the call summary.
+ * Caller name with a small arrow that reveals the full summary on hover.
  *
- * A native popover rather than an absolutely-positioned bubble: the table
- * scrolls sideways, and anything positioned inside a scroll container gets
- * clipped by it — which is exactly what happened to the old hover tooltip, cut
- * off on the left and along the bottom. A popover renders in the top layer, so
- * no ancestor's overflow can touch it, and it brings Escape, light-dismiss and
- * focus handling with it. Still no client component: `popovertarget` is
- * markup, not script.
- *
- * `id` has to be unique per rendered trigger — the mobile cards and the
- * desktop table both render every call, so the call sites prefix it.
+ * CSS-only — `group-hover` plus `peer-focus-visible`, so it needs no client
+ * component and the table stays server-rendered. The arrow is a real button so
+ * the popup is reachable by keyboard; a mouse click doesn't keep it open, so it
+ * closes as soon as the pointer leaves. And `whitespace-normal` undoes the
+ * cell's nowrap so the text wraps inside the bubble.
  */
 function CallerName({
-  id,
   name,
   summary,
 }: {
-  id: string;
   name: string;
   summary: string | null;
 }) {
@@ -40,34 +33,22 @@ function CallerName({
       <span className="font-medium">{name}</span>
 
       {summary && (
-        <>
-          {/* A speech bubble with text in it, not a chevron: a chevron reads
-              as "expand a menu" and says nothing about what is behind it. The
-              icon only renders when a summary exists, so its presence is the
-              signal that there is one; `title` spells out the action for
-              anyone who hovers, and the label carries it for screen readers. */}
+        <span className="group relative inline-flex">
           <button
             type="button"
-            popoverTarget={id}
-            title="Show call summary"
             aria-label={`Show call summary for ${name}`}
-            className="inline-flex rounded text-gray-400 transition-colors hover:text-brand-red-lit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400"
+            className="peer inline-flex rounded text-gray-400 transition-colors hover:text-brand-red-lit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400 group-hover:text-brand-red-lit"
           >
-            <ChatBubbleBottomCenterTextIcon className="w-4" />
+            <ChevronDownIcon className="w-3.5" />
           </button>
 
-          {/* The UA centres a popover in the viewport (inset:0 + margin:auto),
-              which is what we want — there is no anchor positioning to rely on
-              yet. w-[min(...)] keeps it readable without overflowing a phone. */}
-          <div
-            id={id}
-            popover="auto"
-            className="w-[min(24rem,calc(100vw-2rem))] whitespace-normal rounded-lg border border-maroon-400/50 bg-white/[0.06] p-4 text-sm font-normal leading-relaxed text-gray-600 shadow-[0_0_0_1px_rgba(255,46,67,0.08),0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-2xl backdrop:bg-black/40 backdrop:backdrop-blur-sm"
+          <span
+            role="tooltip"
+            className="pointer-events-none invisible absolute left-1/2 top-full z-30 mt-1.5 w-64 -translate-x-1/2 whitespace-normal rounded-lg border border-maroon-400/50 bg-white/[0.06] p-3 text-xs font-normal leading-relaxed text-gray-600 opacity-0 shadow-[0_0_0_1px_rgba(255,46,67,0.08),0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-opacity duration-150 group-hover:visible group-hover:opacity-100 peer-focus-visible:visible peer-focus-visible:opacity-100 motion-reduce:transition-none"
           >
-            <p className="mb-1 text-xs text-gray-500">{name}</p>
             {summary}
-          </div>
-        </>
+          </span>
+        </span>
       )}
     </div>
   );
@@ -119,7 +100,6 @@ export default async function CallLogsTable({
                   <div>
                     <div className="mb-1">
                       <CallerName
-                        id={`call-summary-card-${call.id}`}
                         name={callerLabel(call)}
                         summary={call.summary}
                       />
@@ -148,10 +128,10 @@ export default async function CallLogsTable({
             ))}
           </div>
 
-          <table className="hidden min-w-full text-gray-900 md:table">
+          <table className="hidden min-w-full text-gray-900 md:table pl-18">
             <thead className="rounded-lg text-left text-sm font-normal">
               <tr>
-                <th scope="col" className="px-4 py-5 font-medium sm:pl-6">
+                <th scope="col" className="px-4 py-5 font-medium sm:">
                   Caller
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
@@ -161,7 +141,7 @@ export default async function CallLogsTable({
                   Direction
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
-                  Started
+                  Date
                 </th>
                 <th scope="col" className="px-3 py-5 font-medium">
                   Duration
@@ -183,15 +163,18 @@ export default async function CallLogsTable({
                   key={call.id}
                   className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                 >
-                  {/* No second copy of the summary under the name: it was the
-                      widest thing in the table and the popover already carries
-                      the full text. */}
-                  <td className="whitespace-nowrap py-3 pl-6 pr-3">
-                    <CallerName
-                      id={`call-summary-row-${call.id}`}
-                      name={callerLabel(call)}
-                      summary={call.summary}
-                    />
+                  <td className="whitespace-nowrap py-3 pl-12 pr-3">
+                    <div>
+                      <CallerName
+                        name={callerLabel(call)}
+                        summary={call.summary}
+                      />
+                      {call.summary && (
+                        <p className="max-w-[26ch] truncate text-xs text-gray-500">
+                          {call.summary}
+                        </p>
+                      )}
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     {call.agent?.name ?? '—'}

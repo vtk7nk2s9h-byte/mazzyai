@@ -1,4 +1,5 @@
 import postgres from 'postgres';
+import { PAGE_SIZE } from '@/app/lib/utils';
 import {
   CustomerField,
   CustomersTableType,
@@ -84,7 +85,7 @@ export async function fetchCardData() {
   }
 }
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = PAGE_SIZE;
 export async function fetchFilteredInvoices(
   query: string,
   currentPage: number,

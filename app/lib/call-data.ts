@@ -1,7 +1,8 @@
+import { PAGE_SIZE } from '@/app/lib/utils';
 import { db } from '@/src/prisma/db';
 
 /** Rows per page when the call log is paginated (the organization tables). */
-export const CALLS_PER_PAGE = 10;
+export const CALLS_PER_PAGE = PAGE_SIZE;
 
 /**
  * Calls, newest first, with the agent that handled each one.

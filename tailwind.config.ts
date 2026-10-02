@@ -57,6 +57,18 @@ const config: Config = {
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
+          // Text-on-black value; DEFAULT is the fill and goes muddy as type.
+          lit: 'hsl(var(--destructive-lit))',
+        },
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          foreground: 'hsl(var(--success-foreground))',
+          lit: 'hsl(var(--success-lit))',
+        },
+        error: {
+          DEFAULT: 'hsl(var(--error))',
+          foreground: 'hsl(var(--error-foreground))',
+          lit: 'hsl(var(--error-lit))',
         },
         muted: {
           DEFAULT: 'hsl(var(--muted))',

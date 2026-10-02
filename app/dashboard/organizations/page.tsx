@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { currentUser, hasRole } from '@/auth';
 import { lusitana } from '@/app/ui/fonts';
 import { fetchOrganizationsPages } from '@/app/lib/org-data';
+import CreateOrganization from '@/app/ui/organizations/create-org';
 import OrganizationsTable from '@/app/ui/organizations/table';
 import Pagination from '@/app/ui/invoices/pagination';
 import Search from '@/app/ui/search';
@@ -30,8 +31,9 @@ export default async function Page(props: {
 
   return (
     <div className="w-full">
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full items-center justify-between gap-3">
         <h1 className={`${lusitana.className} text-2xl`}>Organizations</h1>
+        <CreateOrganization />
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-2 md:mt-8">

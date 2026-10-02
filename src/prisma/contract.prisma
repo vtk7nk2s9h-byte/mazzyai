@@ -32,7 +32,7 @@
 enum SystemRole {
   @@type("pg/text@1")
   USER      = "USER" // normal member of one or more orgs
-  SUPPORT   = "SUPPORT" // internal staff, read-mostly via superuser dashboard
+  ADMIN     = "ADMIN" // internal staff, read-mostly via superuser dashboard
   SUPERUSER = "SUPERUSER" // full internal admin
 }
 
@@ -63,7 +63,6 @@ enum OrgStatus {
   ACTIVE    = "ACTIVE"
   PAST_DUE  = "PAST_DUE"
   SUSPENDED = "SUSPENDED"
-  CHURNED   = "CHURNED"
 }
 
 enum Plan {
@@ -87,10 +86,11 @@ enum Weekday {
 
 enum AgentStatus {
   @@type("pg/text@1")
-  DRAFT     = "DRAFT"
-  PUBLISHED = "PUBLISHED"
-  PAUSED    = "PAUSED"
-  ARCHIVED  = "ARCHIVED"
+  IDLE = "IDLE"
+  READY = "READY"
+  ACTIVE = "ACTIVE"
+  PAUSED = "PAUSED"
+  DISACTIVATED = "DISACTIVATED"
 }
 
 enum KnowledgeSourceType {
@@ -156,6 +156,13 @@ enum SubscriptionStatus {
   PAST_DUE = "PAST_DUE"
   CANCELED = "CANCELED"
   UNPAID   = "UNPAID"
+}
+
+enum MeetingStatus {
+  @@type("pg/text@1")
+  SCHEDULED = "SCHEDULED"
+  COMPLETED = "FINISHED"
+  CANCELLED = "CANCELLED"
 }
 
 enum InvoiceStatus {
@@ -287,6 +294,11 @@ model Organization {
   industry    String? // free text or a key into SectorTemplate
   description String?
   website     String?
+  // Contact details live on the organization itself for now. They used to be
+  // on OrganizationLocation, which is commented out below.
+  email       String?
+  phone       String?
+  postalCode  String?
   logoUrl     String?
   timezone    String    @default("UTC")
   language    String    @default("en")
@@ -313,7 +325,7 @@ model Organization {
   deletedAt TimestamptzString? // soft delete: keep billing/audit history
 
   memberships         Membership[]
-  locations           OrganizationLocation[]
+  // locations           OrganizationLocation[]
   agents              Agent[]
   phoneNumbers        PhoneNumber[]
   calls               Call[]
@@ -321,6 +333,7 @@ model Organization {
   usageCounters       UsageCounter[]
   subscription        Subscription?
   invoices            Invoice[]
+  meetings            Meeting[]
   apiKeys             ApiKey[]
   integrations        Integration[]
   featureFlagOverride FeatureFlag[]
@@ -351,60 +364,66 @@ model Membership {
   @@index([organizationId, role])
 }
 
+// COMMENTED OUT: location-level data (address, hours, per-location numbers) is
+// parked while contact details live on Organization. BusinessHour and
+// BusinessHourException hang off a location, so they are parked with it.
+// Uncomment all three, plus Organization.locations and PhoneNumber.location,
+// to bring it back.
+//
 // A facility can have more than one physical location (scalability: chains,
 // multi-branch clinics, franchise restaurants).
-model OrganizationLocation {
-  id             String       @id @default(uuid())
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  label          String // "Main branch", "Downtown"
-  addressLine1   String
-  addressLine2   String?
-  city           String
-  region         String?
-  postalCode     String?
-  country        String // ISO 3166-1 alpha-2
-  latitude       Float?
-  longitude      Float?
-  timezone       String
-  phone          String?
-  email          String?
-  isPrimary      Boolean      @default(false)
-  createdAt      TimestamptzString @default(now())
-  updatedAt      temporal.updatedAtString()
+// model OrganizationLocation {
+//   id             String       @id @default(uuid())
+//   organizationId String
+//   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+//   label          String // "Main branch", "Downtown"
+//   addressLine1   String
+//   addressLine2   String?
+//   city           String
+//   region         String?
+//   postalCode     String?
+//   country        String // ISO 3166-1 alpha-2
+//   latitude       Float?
+//   longitude      Float?
+//   timezone       String
+//   phone          String?
+//   email          String?
+//   isPrimary      Boolean      @default(false)
+//   createdAt      TimestamptzString @default(now())
+//   updatedAt      temporal.updatedAtString()
+//
+//   businessHours   BusinessHour[]
+//   hoursExceptions BusinessHourException[]
+//   phoneNumbers    PhoneNumber[]
+//
+//   @@index([organizationId])
+// }
 
-  businessHours   BusinessHour[]
-  hoursExceptions BusinessHourException[]
-  phoneNumbers    PhoneNumber[]
-
-  @@index([organizationId])
-}
-
-model BusinessHour {
-  id         String               @id @default(uuid())
-  locationId String
-  location   OrganizationLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  weekday    Weekday
-  isClosed   Boolean              @default(false)
-  opensAt    String? // "09:00"
-  closesAt   String? // "18:00", may cross midnight (handled in code)
-
-  @@unique([locationId, weekday])
-}
+// model BusinessHour {
+//   id         String               @id @default(uuid())
+//   locationId String
+//   location   OrganizationLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+//   weekday    Weekday
+//   isClosed   Boolean              @default(false)
+//   opensAt    String? // "09:00"
+//   closesAt   String? // "18:00", may cross midnight (handled in code)
+//
+//   @@unique([locationId, weekday])
+// }
 
 // One-off overrides: holidays, special closures, extended hours.
-model BusinessHourException {
-  id         String               @id @default(uuid())
-  locationId String
-  location   OrganizationLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  date       DateString
-  isClosed   Boolean              @default(true)
-  opensAt    String?
-  closesAt   String?
-  reason     String? // "Public holiday", "Staff training"
-
-  @@unique([locationId, date])
-}
+// model BusinessHourException {
+//   id         String               @id @default(uuid())
+//   locationId String
+//   location   OrganizationLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+//   date       DateString
+//   isClosed   Boolean              @default(true)
+//   opensAt    String?
+//   closesAt   String?
+//   reason     String? // "Public holiday", "Staff training"
+//
+//   @@unique([locationId, date])
+// }
 
 // =============================================================================
 // AGENTS & KNOWLEDGE
@@ -416,7 +435,7 @@ model Agent {
   organization     Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name             String
   description      String?
-  status           AgentStatus   @default(DRAFT)
+  status           AgentStatus   @default(IDLE)
   retellAgentId    String?       @unique
   currentVersionId String?       @unique
   currentVersion   AgentVersion? @relation("AgentCurrentVersion", fields: [currentVersionId], references: [id])
@@ -494,8 +513,8 @@ model PhoneNumber {
   id                  String                @id @default(uuid())
   organizationId      String
   organization        Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  locationId          String?
-  location            OrganizationLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  // locationId          String?
+  // location            OrganizationLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
   agentId             String?
   agent               Agent?                @relation(fields: [agentId], references: [id], onDelete: SetNull)
   e164                String                @unique
@@ -710,6 +729,27 @@ model Invoice {
   createdAt       TimestamptzString @default(now())
 
   @@index([organizationId])
+}
+
+// An appointment on the organization's agenda — what the voice agent books
+// (a table, a viewing, a consultation). Times are UTC like every other
+// timestamp; the calendar renders them in the viewer's zone.
+model Meeting {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  attendeeName   String?
+  location       String?
+  startsAt       TimestamptzString
+  endsAt         TimestamptzString
+  allDay         Boolean           @default(false)
+  status         MeetingStatus     @default(SCHEDULED)
+  createdAt      TimestamptzString @default(now())
+  updatedAt      temporal.updatedAtString()
+
+  @@index([organizationId, startsAt])
 }
 
 // =============================================================================

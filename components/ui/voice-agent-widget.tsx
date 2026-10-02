@@ -9,7 +9,7 @@ import type {
   WebCallSession,
 } from 'retell-client-js-sdk';
 
-import { cn } from '@/lib/utils';
+import { cn } from "@/app/lib/utils.ts"
 
 // A Retell *public* key (public_key_...), not an API key. It is domain-locked
 // in the Retell dashboard and may only open web calls, which is why it is safe

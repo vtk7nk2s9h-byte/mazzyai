@@ -2,6 +2,7 @@ import "../app/ui/global.css";
 import { auth } from "@/auth";
 import { Header } from "@/components/ui/header-3";
 import MaroonDataWires from "@/components/ui/maroon-data-wires";
+import { Toaster } from "@/components/ui/toaster";
 import { themeScript } from "./ui/theme-script";
 import { inter } from "./ui/fonts";
 import { Metadata } from 'next';
@@ -44,6 +45,7 @@ export default async function RootLayout({
         <MaroonDataWires />
         {!session?.user && <Header />}
         {children}
+        <Toaster />
       </body>
     </html>
   );

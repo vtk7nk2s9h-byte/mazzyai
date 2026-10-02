@@ -1,4 +1,11 @@
 import { Revenue } from './definitions';
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
 
 export const formatCurrency = (amount: number) => {
   return (amount / 100).toLocaleString('en-US', {
@@ -88,3 +95,35 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
     totalPages,
   ];
 };
+
+/** The contract's AgentStatus members, in the order the status picker lists them. */
+export const AGENT_STATUSES = ['IDLE', 'READY', 'ACTIVE', 'PAUSED', 'DISACTIVATED'] as const;
+export type AgentStatus = (typeof AGENT_STATUSES)[number];
+
+/** The contract's OrgStatus members, in the order the status picker lists them. */
+export const ORG_STATUSES = ['TRIAL', 'ACTIVE', 'PAST_DUE', 'SUSPENDED'] as const;
+export type OrgStatus = (typeof ORG_STATUSES)[number];
+
+/** The contract's Plan members, cheapest first. */
+export const ORG_PLANS = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'] as const;
+export type OrgPlan = (typeof ORG_PLANS)[number];
+
+/** The contract's SystemRole members, least to most privileged. */
+export const USER_ROLES = ['USER', 'ADMIN', 'SUPERUSER'] as const;
+export type UserRole = (typeof USER_ROLES)[number];
+
+/** Rows every table shows per page. */
+export const PAGE_SIZE = 7;
+
+/**
+ * One page of an in-memory list, for tables whose data isn't paged by its
+ * query. A page past the end is clamped to the last one.
+ */
+export function paginate<T>(items: T[], page: number) {
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const current = Math.min(Math.max(1, page || 1), totalPages);
+  return {
+    rows: items.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE),
+    totalPages,
+  };
+}

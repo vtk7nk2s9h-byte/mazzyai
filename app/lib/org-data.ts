@@ -1,13 +1,14 @@
 import { cache } from 'react';
 
+import { PAGE_SIZE } from '@/app/lib/utils';
 import { db } from '@/src/prisma/db';
 import { or } from '@prisma/orm-postgres/orm-client';
 
 /** Rows per page in the superuser Organizations table. */
-export const ORGS_PER_PAGE = 10;
+export const ORGS_PER_PAGE = PAGE_SIZE;
 
 /** Rows per page in an organization's call log and invoice tabs. */
-export const ORG_ROWS_PER_PAGE = 10;
+export const ORG_ROWS_PER_PAGE = PAGE_SIZE;
 
 /**
  * One page of organizations, newest first. Agents and members are reduced to
@@ -144,3 +145,53 @@ export type OrganizationRow = Awaited<
 export type OrganizationDetail = NonNullable<
   Awaited<ReturnType<typeof fetchOrganizationBySlug>>
 >;
+
+/** The IANA zone if it is one, else UTC, so a bad value can't break the page. */
+function validTimeZone(timeZone: string) {
+  try {
+    new Intl.DateTimeFormat('en-CA', { timeZone });
+    return timeZone;
+  } catch {
+    return 'UTC';
+  }
+}
+
+/**
+ * What an organization has spent today against its daily budget, and whether
+ * that has used it up. "Today" is the organization's own calendar day, so the
+ * spend resets at its midnight and the pause lifts by itself.
+ *
+ * "Paused" is worked out here from the calls rather than stored, so it can't go
+ * stale: raising the budget or a new day clears it with no job to run. Nothing
+ * in this app answers calls (Retell does), so this is the one place that
+ * decides whether service is paused. Whatever acts on it should ask here.
+ */
+export async function fetchBudgetState(
+  organizationId: string,
+  timeZone: string,
+  budgetCents: number | null,
+) {
+  if (budgetCents === null) {
+    return { spentCents: 0, paused: false };
+  }
+  const zone = validTimeZone(timeZone);
+  const dayOf = (iso: string) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(new Date(iso));
+  const today = dayOf(new Date().toISOString());
+  // Two days back covers any timezone's "today"; the exact cut is made below.
+  const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+
+  try {
+    const calls = await db.orm.public.Call.where({ organizationId })
+      .where((c) => c.startedAt.gte(since))
+      .select('costCents', 'startedAt')
+      .all();
+    const spentCents = calls
+      .filter((c) => c.startedAt && dayOf(c.startedAt) === today)
+      .reduce((sum, c) => sum + (c.costCents ?? 0), 0);
+    return { spentCents, paused: spentCents >= budgetCents };
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error("Failed to fetch the organization's spend.");
+  }
+}

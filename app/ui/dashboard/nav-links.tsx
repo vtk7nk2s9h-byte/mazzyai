@@ -5,6 +5,10 @@ import {
   BuildingOffice2Icon,
   DocumentDuplicateIcon,
   PhoneArrowDownLeftIcon,
+  CalendarDaysIcon,
+  Cog6ToothIcon,
+  CpuChipIcon,
+  SignalIcon,
 } from '@heroicons/react/24/outline';
 import { clsx } from 'clsx';
 import Link from 'next/link';
@@ -19,13 +23,29 @@ const links = [
     href: '/dashboard/invoices',
     icon: DocumentDuplicateIcon,
   },
-  { name: 'Customers', href: '/dashboard/customers', icon: UserGroupIcon },
   {
     name: 'Call logs',
     href: '/dashboard/call-logs',
     icon: PhoneArrowDownLeftIcon,
   },
+  { name: 'Agenda', href: '/dashboard/agenda', icon: CalendarDaysIcon },
 ];
+
+// Superusers see every agent; an organization admin sees their own. The page
+// decides which, so the link is the same for both.
+const agentsLink = {
+  name: 'Agents',
+  href: '/dashboard/agents',
+  icon: CpuChipIcon,
+};
+
+// The feed of calls and meetings as they happen. Same audience as Agents: a
+// superuser sees every organization's events, an organization admin their own.
+const liveEventsLink = {
+  name: 'Live Events',
+  href: '/dashboard/live-events',
+  icon: SignalIcon,
+};
 
 // Appended only for superusers. The link is a convenience, not the guard — the
 // page itself re-checks the role, since anyone can type the URL.
@@ -35,18 +55,65 @@ const superuserLinks = [
     href: '/dashboard/organizations',
     icon: BuildingOffice2Icon,
   },
+  { name: 'Team', href: '/dashboard/team', icon: UserGroupIcon },
+  agentsLink,
+  liveEventsLink,
 ];
 
-// A superuser reads call logs and invoices per tenant, from inside an
-// organization's page, so the two global views drop out of their sidebar.
+// A superuser reads call logs, invoices and the agenda per tenant, from inside
+// an organization's page, so the global views drop out of their sidebar (the
+// agenda is the signed-in user's own organization, which a superuser has none
+// of).
 // Everyone else keeps them. The routes still exist either way — this hides the
 // links, it doesn't close the pages.
-const superuserHides = ['/dashboard/invoices', '/dashboard/call-logs'];
+const superuserHides = [
+  '/dashboard/invoices',
+  '/dashboard/call-logs',
+  '/dashboard/agenda',
+];
+
+type NavLink = { name: string; href: string; icon: typeof HomeIcon };
+
+/** One sidebar link: icon always, label from md up, lit when it's the page. */
+function NavItem({ link, pathname }: { link: NavLink; pathname: string }) {
+  const LinkIcon = link.icon;
+  // Home would otherwise light up on every nested dashboard route.
+  const active =
+    link.href === '/dashboard'
+      ? pathname === link.href
+      : pathname.startsWith(link.href);
+
+  return (
+    <Link
+      href={link.href}
+      aria-current={active ? 'page' : undefined}
+      className={clsx(
+        // No hover fill: the label lights up instead, so the sidebar
+        // stays flat and only type and icon carry state.
+        'group flex h-9 grow items-center justify-center gap-2.5 rounded-lg px-2 text-xs font-medium transition-colors md:grow-0 md:justify-start',
+        active ? 'text-gray-900' : 'text-gray-500',
+      )}
+    >
+      <LinkIcon
+        className={clsx(
+          'w-[17px] shrink-0 transition-colors',
+          active ? 'text-brand-red-lit' : 'group-hover:text-brand-red-lit',
+        )}
+      />
+      <p className="hidden transition-[color,text-shadow] duration-200 group-hover:text-brand-red-lit group-hover:[text-shadow:0_0_12px_rgba(255,46,67,0.55)] md:block">
+        {link.name}
+      </p>
+    </Link>
+  );
+}
 
 export default function NavLinks({
   isSuperuser = false,
+  isOrgAdmin = false,
 }: {
   isSuperuser?: boolean;
+  /** An organization admin's Agents and Live Events links; superusers always get them. */
+  isOrgAdmin?: boolean;
 }) {
   const pathname = usePathname();
   return (
@@ -56,41 +123,29 @@ export default function NavLinks({
             ...links.filter((l) => !superuserHides.includes(l.href)),
             ...superuserLinks,
           ]
-        : links
-      ).map((link) => {
-        const LinkIcon = link.icon;
-        // Home would otherwise light up on every nested dashboard route.
-        const active =
-          link.href === '/dashboard'
-            ? pathname === link.href
-            : pathname.startsWith(link.href);
-
-        return (
-          <Link
-            key={link.name}
-            href={link.href}
-            aria-current={active ? 'page' : undefined}
-            className={clsx(
-              // No hover fill: the label lights up instead, so the sidebar
-              // stays flat and only type and icon carry state.
-              'group flex h-9 grow items-center justify-center gap-2.5 rounded-lg px-2 text-xs font-medium transition-colors md:grow-0 md:justify-start',
-              active ? 'text-gray-900' : 'text-gray-500',
-            )}
-          >
-            <LinkIcon
-              className={clsx(
-                'w-[17px] shrink-0 transition-colors',
-                active
-                  ? 'text-brand-red-lit'
-                  : 'group-hover:text-brand-red-lit',
-              )}
-            />
-            <p className="hidden transition-[color,text-shadow] duration-200 group-hover:text-brand-red-lit group-hover:[text-shadow:0_0_12px_rgba(255,46,67,0.55)] md:block">
-              {link.name}
-            </p>
-          </Link>
-        );
-      })}
+        : isOrgAdmin
+          ? [...links, agentsLink, liveEventsLink]
+          : links
+      ).map((link) => (
+        <NavItem key={link.name} link={link} pathname={pathname} />
+      ))}
     </>
+  );
+}
+
+/**
+ * Settings sits apart from the rest: the sidebar renders it down by the
+ * account block it belongs with, not up among the page links.
+ */
+export function SettingsLink() {
+  return (
+    <NavItem
+      link={{
+        name: 'Settings',
+        href: '/dashboard/settings',
+        icon: Cog6ToothIcon,
+      }}
+      pathname={usePathname()}
+    />
   );
 }

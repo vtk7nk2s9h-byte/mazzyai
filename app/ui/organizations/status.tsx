@@ -1,23 +1,34 @@
 import clsx from 'clsx';
 
-const pill = 'inline-flex shrink-0 items-center rounded-full px-2 py-1 text-xs';
+const pill =
+  'inline-flex shrink-0 items-center rounded-full border px-2 py-1 text-xs';
+
+// One tone per meaning, each with its own border, so every badge in the app is
+// outlined the same way and none reads as the odd one out.
+const tone = {
+  neutral: 'border-white/[0.12] bg-gray-100 text-gray-500',
+  faded: 'border-white/[0.12] bg-gray-100 text-gray-400',
+  good: 'border-green-400/50 bg-green-500/15 text-green-400',
+  warn: 'border-amber-400/50 bg-amber-500/15 text-amber-300',
+  bad: 'border-red-400/50 bg-red-500/15 text-red-400',
+  brand: 'border-maroon-300/70 bg-maroon-500/10 text-maroon-200',
+};
 
 /** Sentence case for an enum member: PAST_DUE -> Past due. */
-function label(value: string) {
+export function label(value: string) {
   const words = value.toLowerCase().replace(/_/g, ' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-/** TRIAL / ACTIVE / PAST_DUE / SUSPENDED / CHURNED. */
+/** TRIAL / ACTIVE / PAST_DUE / SUSPENDED. */
 export function OrgStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={clsx(pill, {
-        'bg-gray-100 text-gray-500': status === 'TRIAL',
-        'bg-green-500 text-white': status === 'ACTIVE',
-        'bg-amber-500/15 text-amber-300': status === 'PAST_DUE',
-        'bg-red-500/15 text-red-400': status === 'SUSPENDED',
-        'bg-gray-100 text-gray-400': status === 'CHURNED',
+        [tone.neutral]: status === 'TRIAL',
+        [tone.good]: status === 'ACTIVE',
+        [tone.warn]: status === 'PAST_DUE',
+        [tone.bad]: status === 'SUSPENDED',
       })}
     >
       {label(status)}
@@ -29,16 +40,21 @@ export function OrgStatusBadge({ status }: { status: string }) {
 export function PlanBadge({ plan }: { plan: string }) {
   return (
     <span
-      className={clsx(pill, 'border', {
+      className={clsx(pill, {
         'border-white/[0.12] text-gray-500': plan === 'FREE',
         'border-white/[0.12] text-gray-600': plan === 'STARTER',
-        'border-maroon-400/50 text-maroon-300': plan === 'PRO',
+        [tone.brand]: plan === 'PRO',
         'border-brand-red-lit/60 text-brand-red-lit': plan === 'ENTERPRISE',
       })}
     >
       {label(plan)}
     </span>
   );
+}
+
+/** The language as its short code (EN / AR / NL); an unlisted locale shows as is. */
+export function LanguageBadge({ language }: { language: string }) {
+  return <span className={clsx(pill, tone.neutral)}>{language}</span>;
 }
 
 /**
@@ -49,11 +65,11 @@ export function InvoiceStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={clsx(pill, {
-        'bg-gray-100 text-gray-500': status === 'DRAFT',
-        'bg-amber-500/15 text-amber-300': status === 'OPEN',
-        'bg-green-500 text-white': status === 'PAID',
-        'bg-red-500/15 text-red-400': status === 'UNCOLLECTIBLE',
-        'bg-gray-100 text-gray-400': status === 'VOID',
+        [tone.neutral]: status === 'DRAFT',
+        [tone.warn]: status === 'OPEN',
+        [tone.good]: status === 'PAID',
+        [tone.bad]: status === 'UNCOLLECTIBLE',
+        [tone.faded]: status === 'VOID',
       })}
     >
       {label(status)}
@@ -61,18 +77,96 @@ export function InvoiceStatusBadge({ status }: { status: string }) {
   );
 }
 
-/** DRAFT / PUBLISHED / PAUSED / ARCHIVED. */
+/** IDLE / READY / ACTIVE / PAUSED / DISACTIVATED. */
 export function AgentStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={clsx(pill, {
-        'bg-gray-100 text-gray-500': status === 'DRAFT',
-        'bg-green-500 text-white': status === 'PUBLISHED',
-        'bg-amber-500/15 text-amber-300': status === 'PAUSED',
-        'bg-gray-100 text-gray-400': status === 'ARCHIVED',
+        [tone.neutral]: status === 'IDLE',
+        [tone.brand]: status === 'READY',
+        [tone.good]: status === 'ACTIVE',
+        [tone.warn]: status === 'PAUSED',
+        [tone.bad]: status === 'DISACTIVATED',
       })}
     >
       {label(status)}
+    </span>
+  );
+}
+
+/**
+ * A glowing dot for an agent's status, same look as the Enabled/Disabled dot:
+ * green when active, yellow when paused, red when disactivated. Other statuses
+ * (idle, ready) show a dim dot, so the column of dots stays aligned.
+ */
+export function AgentStatusDot({ status }: { status: string }) {
+  return (
+    <span
+      role="img"
+      aria-label={label(status)}
+      title={label(status)}
+      className={clsx('inline-block h-1.5 w-1.5 shrink-0 rounded-full', {
+        'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]':
+          status === 'ACTIVE',
+        'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]':
+          status === 'PAUSED',
+        'bg-brand-red-lit shadow-[0_0_8px_rgba(255,46,67,0.8)]':
+          status === 'DISACTIVATED',
+        'bg-gray-400/60': !['ACTIVE', 'PAUSED', 'DISACTIVATED'].includes(status),
+      })}
+    />
+  );
+}
+
+/** SCHEDULED / COMPLETED / CANCELLED — same ladder the calendar events use. */
+export function MeetingStatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={clsx(pill, {
+        [tone.brand]: status === 'SCHEDULED',
+        [tone.neutral]: status === 'COMPLETED',
+        [tone.bad]: status === 'CANCELLED',
+      })}
+    >
+      {label(status)}
+    </span>
+  );
+}
+
+/** USER / ADMIN / SUPERUSER — the contract's SystemRole. */
+export function UserRoleBadge({ role }: { role: string }) {
+  return (
+    <span
+      className={clsx(pill, {
+        [tone.neutral]: role === 'USER',
+        [tone.warn]: role === 'ADMIN',
+        [tone.brand]: role === 'SUPERUSER',
+      })}
+    >
+      {label(role)}
+    </span>
+  );
+}
+
+/** ACTIVE / DISABLED. */
+export function UserStatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={clsx(pill, {
+        [tone.good]: status === 'ACTIVE',
+        [tone.faded]: status === 'DISABLED',
+      })}
+    >
+      {label(status)}
+    </span>
+  );
+}
+
+/** Whether an agent is linked to its Retell voice agent (retellAgentId set). */
+export function ConnectionBadge({ connected }: { connected: boolean }) {
+  return (
+    <span className={clsx(pill, connected ? tone.good : tone.faded)}>
+      {connected ? 'Connected' : 'Not connected'}
     </span>
   );
 }

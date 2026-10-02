@@ -68,6 +68,19 @@ body {
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 98%;
+    /* Status colours stay red/green on purpose: they are semantic signals, not
+       brand paint. Each is a dim/lit pair for the same reason brand-red is —
+       the fill has to stay dark enough to carry white type, which leaves it too
+       dark to read AS type or as an edge on the card. Use -lit for text and
+       borders, DEFAULT for fills. --error mirrors --destructive; both names are
+       in play. */
+    --destructive-lit: 0 72% 61%;
+    --success: 152 60% 32%;
+    --success-foreground: 0 0% 100%;
+    --success-lit: 152 60% 56%;
+    --error: 0 62% 45%;
+    --error-foreground: 0 0% 98%;
+    --error-lit: 0 72% 61%;
     --border: 350 30% 12%;
     --input: 350 30% 12%;
     --ring: 351 55% 45%;
@@ -91,6 +104,13 @@ body {
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 98%;
+    --destructive-lit: 0 72% 61%;
+    --success: 152 60% 32%;
+    --success-foreground: 0 0% 100%;
+    --success-lit: 152 60% 56%;
+    --error: 0 62% 45%;
+    --error-foreground: 0 0% 98%;
+    --error-lit: 0 72% 61%;
     --border: 350 26% 13%;
     --input: 350 26% 13%;
     --ring: 351 55% 45%;
@@ -113,6 +133,28 @@ body {
 }
 
 @layer components {
+  /* "Back" link: a large lit label over a red rule, with an ArrowIcon that
+     lights up and nudges left. Markup is
+       <Link class="back-link"><ArrowIcon direction="left" class="back-link-arrow"/>
+       <span class="back-link-label"><span class="back-link-initial">H</span>ome</span>
+       <span class="back-link-rule"/></Link>
+     Hover matches the sidebar links: arrow and label go red with a glow. */
+  .back-link {
+    @apply relative inline-flex items-center gap-2 px-1 pb-2 text-2xl font-semibold tracking-tight text-gray-900 focus-visible:outline-none;
+  }
+  .back-link-arrow {
+    @apply shrink-0 text-gray-500 transition-[color,filter,transform] duration-200 group-hover:-translate-x-1 group-hover:text-brand-red-lit group-hover:[filter:drop-shadow(0_0_8px_rgba(255,46,67,0.65))] group-focus-visible:text-brand-red-lit;
+  }
+  .back-link-label {
+    @apply transition-[color,text-shadow] duration-200 group-hover:text-brand-red-lit group-hover:[text-shadow:0_0_12px_rgba(255,46,67,0.55)];
+  }
+  .back-link-initial {
+    @apply text-brand-red-lit [text-shadow:0_0_22px_rgba(255,46,67,0.5)];
+  }
+  .back-link-rule {
+    @apply pointer-events-none absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-brand-red to-transparent shadow-[0_5px_14px_-6px_rgba(140,25,37,0.95)];
+  }
+
   /* The service cards' animated border. The conic gradient fills the whole
      element, then the two-layer mask punches out everything inside the
      padding box — what survives is a --ring-w edge carrying one bright arc
@@ -144,7 +186,7 @@ body {
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
     mask-composite: exclude;
-    animation: border-angle-spin 6s linear infinite;
+    animation: border-angle-spin var(--ring-speed, 6s) linear infinite;
     /* Negative delays, set per card, start each arc at a different point in
        the cycle so a row of cards doesn't pulse in lockstep. */
     animation-delay: var(--ring-delay, 0s);
@@ -186,16 +228,29 @@ body {
   [type='number']:focus,
   [type='search']:focus,
   [type='date']:focus,
+  [type='datetime-local']:focus,
+  [type='time']:focus,
+  [type='month']:focus,
+  [type='week']:focus,
+  [type='tel']:focus,
+  [type='url']:focus,
+  input:not([type]):focus,
   select:focus,
   textarea:focus {
-    --tw-ring-color: var(--brand);
+    /* One border, not three: the forms plugin also draws a 2px outline offset
+       2px outside the border plus a 1px ring, which showed up as a second red
+       line around a focused field. The border turning brand is the cue. */
     border-color: var(--brand);
-    outline-color: var(--brand);
+    outline: none;
+    box-shadow: none;
   }
 
+  /* `color` matters here: the forms plugin paints a checked box with
+     currentColor, and its own colour for the control is blue. */
   [type='checkbox'],
   [type='radio'] {
     accent-color: var(--brand);
+    color: var(--brand);
   }
 
   [type='checkbox']:checked,
@@ -207,6 +262,7 @@ body {
   [type='checkbox']:focus,
   [type='radio']:focus {
     --tw-ring-color: var(--brand);
+    outline-color: var(--brand);
   }
 
   ::selection {

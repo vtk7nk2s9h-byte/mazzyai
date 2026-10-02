@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from "@/app/lib/utils.ts"
 
 type SectionHeadingProps = {
   /** Rendered with its first letter in the system red. */

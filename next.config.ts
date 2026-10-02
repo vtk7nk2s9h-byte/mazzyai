@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Knowledge-base file uploads travel in a server action; the default 1MB body
+  // limit would reject almost any PDF. The action itself caps a file at 8MB.
+  experimental: { serverActions: { bodySizeLimit: '10mb' } },
   devIndicators: {
     // Out of the sidebar's way — it defaults to bottom-left, right on top of
     // the sign-out button.

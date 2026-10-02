@@ -19,7 +19,7 @@ export function CallStatusBadge({ status }: { status: string }) {
         'bg-gray-100 text-gray-500': status === 'REGISTERED',
         'bg-amber-500/15 text-amber-300': status === 'ONGOING',
         'bg-gray-100 text-gray-600': status === 'ENDED',
-        'bg-green-500 text-white': status === 'ANALYZED',
+        'bg-green-500/15 text-green-400': status === 'ANALYZED',
         'bg-red-500/15 text-red-400': status === 'FAILED',
       })}
     >

@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { currentUser, hasRole } from '@/auth';
 import { fetchCallPages } from '@/app/lib/call-data';
 import {
+  fetchBudgetState,
   fetchOrganizationBySlug,
   fetchOrgInvoicesPages,
 } from '@/app/lib/org-data';
@@ -17,10 +18,13 @@ import OrgAvatar from '@/app/ui/organizations/avatar';
 import OrgInvoicesTable from '@/app/ui/organizations/invoices-table';
 import { Field, Section, Toggle } from '@/app/ui/organizations/field';
 import {
-  AgentStatusBadge,
   OrgStatusBadge,
   PlanBadge,
 } from '@/app/ui/organizations/status';
+import AgentStatusSelect from '@/app/ui/agents/agent-status-select';
+import Agenda from '@/app/ui/agenda/agenda';
+import CallHandlingEdit from '@/app/ui/organizations/call-handling-edit';
+import OrgSelect from '@/app/ui/organizations/org-select';
 import { InvoicesTableSkeleton } from '@/app/ui/skeletons';
 
 export async function generateMetadata(props: {
@@ -46,6 +50,12 @@ export default async function Page(props: {
   const { slug } = await props.params;
   const org = await fetchOrganizationBySlug(slug);
   if (!org) notFound();
+
+  const budget = await fetchBudgetState(
+    org.id,
+    org.timezone,
+    org.dailyBudgetCents,
+  );
 
   const searchParams = await props.searchParams;
   const callsPage = Number(searchParams?.calls) || 1;
@@ -82,8 +92,8 @@ export default async function Page(props: {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <PlanBadge plan={org.plan} />
-          <OrgStatusBadge status={org.status} />
+          <OrgSelect orgId={org.id} slug={org.slug} field="plan" value={org.plan} />
+          <OrgSelect orgId={org.id} slug={org.slug} field="status" value={org.status} />
         </div>
       </div>
 
@@ -92,6 +102,9 @@ export default async function Page(props: {
           <Field label="Name">{org.name}</Field>
           <Field label="Slug">{org.slug}</Field>
           <Field label="Industry">{org.industry}</Field>
+          <Field label="Email">{org.email}</Field>
+          <Field label="Phone">{org.phone}</Field>
+          <Field label="Postal code">{org.postalCode}</Field>
           <Field label="Website">
             {org.website && (
               <a
@@ -113,18 +126,43 @@ export default async function Page(props: {
         <Section
           title="Call handling"
           description="Applies to every agent in this organization."
+          action={
+            <CallHandlingEdit
+              orgId={org.id}
+              slug={org.slug}
+              orgName={org.name}
+              current={{
+                recordCalls: org.recordCalls,
+                dataRetentionDays: org.dataRetentionDays,
+                dailyBudgetCents: org.dailyBudgetCents,
+              }}
+            />
+          }
         >
           <Field label="Record calls">
             <Toggle on={org.recordCalls} />
           </Field>
           <Field label="Transfer to a human">
-            <Toggle on={org.allowHumanTransfer} />
+            <span className="text-gray-400">Coming later</span>
           </Field>
           <Field label="Data retention">{org.dataRetentionDays} days</Field>
           <Field label="Daily budget">
-            {org.dailyBudgetCents === null
-              ? 'Uncapped'
-              : formatCurrency(org.dailyBudgetCents)}
+            {org.dailyBudgetCents === null ? (
+              'Uncapped'
+            ) : (
+              <div className="flex flex-col items-end gap-0.5">
+                <span>{formatCurrency(org.dailyBudgetCents)}</span>
+                <span className="text-xs tabular-nums text-gray-500">
+                  {formatCurrency(budget.spentCents)} spent today
+                </span>
+                {budget.paused && (
+                  <span className="text-xs text-amber-300">
+                    Service paused until midnight ({org.timezone}) or a higher
+                    budget
+                  </span>
+                )}
+              </div>
+            )}
           </Field>
           <Field label="Notification email">{org.notificationEmail}</Field>
         </Section>
@@ -168,16 +206,28 @@ export default async function Page(props: {
             </p>
           ) : (
             org.agents.map((agent) => (
-              <Field key={agent.id} label={agent.name}>
-                <div className="flex flex-col items-end gap-1">
-                  <AgentStatusBadge status={agent.status} />
+              <div
+                key={agent.id}
+                className="flex items-center justify-between gap-4 border-b border-gray-200 py-3 last:border-none"
+              >
+                <div className="min-w-0">
+                  <dt className="truncate text-sm font-medium text-gray-900">
+                    {agent.name}
+                  </dt>
                   {agent.description && (
-                    <span className="max-w-prose text-xs leading-relaxed text-gray-500">
+                    <dd className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-gray-500">
                       {agent.description}
-                    </span>
+                    </dd>
                   )}
                 </div>
-              </Field>
+                <dd className="shrink-0">
+                  <AgentStatusSelect
+                    agentId={agent.id}
+                    slug={org.slug}
+                    status={agent.status}
+                  />
+                </dd>
+              </div>
             ))
           )}
         </Section>
@@ -199,6 +249,15 @@ export default async function Page(props: {
       >
         <InvoicesSection organizationId={org.id} currentPage={invoicesPage} />
       </Suspense>
+
+      {/* Here for development: a tenant sees its own agenda from the sidebar,
+          so this is the superuser's way to look at anyone else's. */}
+      <h2 className={`${lusitana.className} mt-10 text-xl`}>Agenda</h2>
+      <div className="mt-4">
+        <Suspense fallback={<InvoicesTableSkeleton />}>
+          <Agenda organizationId={org.id} />
+        </Suspense>
+      </div>
     </div>
   );
 }

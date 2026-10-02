@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import styles from "@/app/ui/logoutButton.module.css";
+import ArrowIcon from "@/components/ui/arrow-icon";
 
 type Stage = "idle" | "walking1" | "walking2" | "falling" | "closing";
 
@@ -119,21 +120,7 @@ export default function LogoutButton({
       <span className={styles.text}>{label}</span>
 
       <span className={styles.arrow} aria-hidden="true">
-        {/* Elongated viewBox rather than a scaled-up square: stretching the
-            shaft is what makes it read as long, not just large. */}
-        <svg
-          viewBox="0 0 40 24"
-          width="35"
-          height="21"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M2 12h32" />
-          <path d="M26.5 5 34 12l-7.5 7" />
-        </svg>
+        <ArrowIcon />
       </span>
 
       <svg

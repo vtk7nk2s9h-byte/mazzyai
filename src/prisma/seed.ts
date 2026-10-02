@@ -17,6 +17,15 @@ const SUPERUSER = {
   name: 'Mazen',
 };
 
+// The primary user of the MazzyAI organization: systemRole ADMIN, plus an
+// ADMIN membership that gives it the org-level role.
+const ADMIN_ORG_SLUG = 'mazzyai';
+const ORG_ADMIN = {
+  email: 'admin@mazzyai.com',
+  password: 'mazzyai',
+  name: 'Admin',
+};
+
 // Ten tenants across the sectors the product targets. No logoUrl on any of
 // them — OrgAvatar falls back to the initials ring, which is what most real
 // rows will look like anyway.
@@ -33,7 +42,7 @@ const ORG_FIXTURES = [
       {
         name: 'Reservations',
         description: 'Takes table bookings and reads back the confirmation.',
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
       {
         name: 'Takeaway line',
@@ -54,12 +63,12 @@ const ORG_FIXTURES = [
       {
         name: 'Appointment desk',
         description: 'Books check-ups and reschedules cancellations.',
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
       {
         name: 'Out of hours',
         description: 'Triages after-hours calls to the on-call dentist.',
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
     ],
   },
@@ -75,7 +84,7 @@ const ORG_FIXTURES = [
       {
         name: 'Service intake',
         description: 'Collects plate, symptom and preferred drop-off slot.',
-        status: 'DRAFT',
+        status: 'IDLE',
       },
     ],
   },
@@ -91,7 +100,7 @@ const ORG_FIXTURES = [
       {
         name: 'Front desk',
         description: 'Answers the main line across all three branches.',
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
     ],
   },
@@ -107,7 +116,7 @@ const ORG_FIXTURES = [
       {
         name: 'Chair booking',
         description: 'Books cuts by barber and sends a reminder.',
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
     ],
   },
@@ -116,14 +125,14 @@ const ORG_FIXTURES = [
     slug: 'alpine-ski-rentals',
     industry: 'rental',
     timezone: 'Europe/Zurich',
-    status: 'CHURNED',
+    status: 'SUSPENDED',
     plan: 'FREE',
     minutesIncluded: 0,
     agents: [
       {
         name: 'Season line',
         description: 'Quoted rental packages over the winter season.',
-        status: 'ARCHIVED',
+        status: 'IDLE',
       },
     ],
   },
@@ -139,12 +148,12 @@ const ORG_FIXTURES = [
       {
         name: 'New matter intake',
         description: 'Screens enquiries and routes them to a practice group.',
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
       {
         name: 'Billing questions',
         description: 'Answers invoice queries from existing clients.',
-        status: 'DRAFT',
+        status: 'IDLE',
       },
     ],
   },
@@ -160,7 +169,7 @@ const ORG_FIXTURES = [
       {
         name: 'Quote line',
         description: 'Takes garden size and job type for a call-back quote.',
-        status: 'DRAFT',
+        status: 'IDLE',
       },
     ],
   },
@@ -176,7 +185,7 @@ const ORG_FIXTURES = [
       {
         name: 'Enrolment',
         description: 'Matches a subject and level to an available tutor.',
-        status: 'PUBLISHED',
+        status: 'ACTIVE',
       },
     ],
   },
@@ -197,7 +206,7 @@ const ORG_FIXTURES = [
       {
         name: 'Viewings',
         description: 'Books flat viewings against the agent calendar.',
-        status: 'ARCHIVED',
+        status: 'IDLE',
       },
     ],
   },
@@ -282,34 +291,91 @@ function invoicesFor(slug: string) {
   }));
 }
 
+// A tenant login, so /dashboard/agenda (which reads the signed-in user's own
+// organization) can be tried without the superuser, who has no membership.
+const MEMBER = {
+  email: 'owner@first-org.test',
+  password: 'mazzyai',
+  name: 'First Org Owner',
+};
+
+// Meetings are dated relative to the day the seed runs, so the calendar always
+// has something this week and next. [dayOffset, 'HH:MM', minutes, title,
+// attendee, location, status, allDay]. Past ones are completed, one is
+// cancelled, one spans a whole day — enough to see every event style.
+const MEETING_SHAPES = [
+  [-9, '10:00', 45, 'Onboarding session', 'Ana Ruiz', 'Video call', 'COMPLETED', false],
+  [-6, '14:30', 30, 'Follow-up call', 'Jonas Weber', 'Phone', 'COMPLETED', false],
+  [-3, '09:00', 60, 'Site visit', 'Priya Nair', 'On site', 'CANCELLED', false],
+  [-1, '16:00', 30, 'Consultation', 'Lena Fischer', 'Front desk', 'COMPLETED', false],
+  [0, '09:30', 45, 'Team sync', null, 'Office', 'SCHEDULED', false],
+  [0, '13:00', 60, 'Consultation', 'Tomasz Nowak', 'Front desk', 'SCHEDULED', false],
+  [1, '11:00', 30, 'Follow-up call', 'Sofia Marino', 'Phone', 'SCHEDULED', false],
+  [2, '15:00', 90, 'Site visit', 'Marta Kowalski', 'On site', 'SCHEDULED', false],
+  [3, '00:00', 0, 'Training day', null, 'Office', 'SCHEDULED', true],
+  [5, '10:30', 45, 'Onboarding session', 'Elena Rossi', 'Video call', 'SCHEDULED', false],
+  [8, '14:00', 60, 'Quarterly review', 'Daniel Stein', 'Meeting room', 'SCHEDULED', false],
+  [13, '09:00', 30, 'Consultation', 'Chloe Martin', 'Front desk', 'SCHEDULED', false],
+] as const;
+
+function meetingsFor(today: Date) {
+  return MEETING_SHAPES.map(
+    ([dayOffset, time, minutes, title, attendeeName, location, status, allDay]) => {
+      const [hh, mm] = time.split(':').map(Number);
+      const start = new Date(
+        Date.UTC(
+          today.getUTCFullYear(),
+          today.getUTCMonth(),
+          today.getUTCDate() + dayOffset,
+          hh,
+          mm,
+        ),
+      );
+      const end = allDay
+        ? new Date(start.getTime() + 24 * 60 * 60 * 1000)
+        : new Date(start.getTime() + minutes * 60_000);
+      return {
+        title,
+        attendeeName,
+        location,
+        status,
+        allDay,
+        startsAt: start.toISOString(),
+        endsAt: end.toISOString(),
+      };
+    },
+  );
+}
+
 async function main() {
   // auth.ts looks the account up by lowercased email and compares against
   // passwordHash, so the seed writes exactly what Credentials sign-in reads.
-  const passwordHash = await bcrypt.hash(SUPERUSER.password, 10);
-  const existingUser = await db.orm.public.User.where({
-    email: SUPERUSER.email,
-  })
-    .select('id')
-    .first();
+  // The internal account is SUPERUSER — the contract's "full internal admin".
+  for (const staff of [SUPERUSER]) {
+    const passwordHash = await bcrypt.hash(staff.password, 10);
+    const existing = await db.orm.public.User.where({ email: staff.email })
+      .select('id')
+      .first();
 
-  if (existingUser) {
-    // Re-running resets the password and re-asserts the role, so a demoted or
-    // locked-out dev account comes back without a manual SQL fix.
-    await db.orm.public.User.where({ id: existingUser.id }).update({
-      passwordHash,
-      systemRole: 'SUPERUSER',
-      status: 'ACTIVE',
-    });
-    console.log('updated superuser:', SUPERUSER.email);
-  } else {
-    await db.orm.public.User.create({
-      email: SUPERUSER.email,
-      name: SUPERUSER.name,
-      passwordHash,
-      systemRole: 'SUPERUSER',
-      status: 'ACTIVE',
-    });
-    console.log('created superuser:', SUPERUSER.email);
+    if (existing) {
+      // Re-running resets the password and re-asserts the role, so a demoted or
+      // locked-out dev account comes back without a manual SQL fix.
+      await db.orm.public.User.where({ id: existing.id }).update({
+        passwordHash,
+        systemRole: 'SUPERUSER',
+        status: 'ACTIVE',
+      });
+      console.log('updated superuser:', staff.email);
+    } else {
+      await db.orm.public.User.create({
+        email: staff.email,
+        name: staff.name,
+        passwordHash,
+        systemRole: 'SUPERUSER',
+        status: 'ACTIVE',
+      });
+      console.log('created superuser:', staff.email);
+    }
   }
 
   let org = await db.orm.public.Organization.where({ slug: ORG_SLUG })
@@ -343,7 +409,7 @@ async function main() {
       organizationId: org!.id,
       name: 'Front desk',
       description: 'Answers the main line and takes bookings.',
-      status: 'PUBLISHED',
+      status: 'ACTIVE',
     });
     agent = await db.orm.public.Agent.where({ organizationId: org!.id })
       .select('id', 'name')
@@ -541,6 +607,131 @@ async function main() {
 
   console.log(`tenant calls created: ${callsCreated}`);
   console.log(`invoices created: ${invoicesCreated}`);
+
+  // A tenant login for first-org, owner of it.
+  const memberHash = await bcrypt.hash(MEMBER.password, 10);
+  let member = await db.orm.public.User.where({ email: MEMBER.email })
+    .select('id')
+    .first();
+  if (!member) {
+    await db.orm.public.User.create({
+      email: MEMBER.email,
+      name: MEMBER.name,
+      passwordHash: memberHash,
+      status: 'ACTIVE',
+    });
+    member = await db.orm.public.User.where({ email: MEMBER.email })
+      .select('id')
+      .first();
+    console.log('created tenant user:', MEMBER.email);
+  }
+  const membership = await db.orm.public.Membership.where({
+    userId: member!.id,
+    organizationId: org!.id,
+  })
+    .select('id')
+    .first();
+  if (!membership) {
+    await db.orm.public.Membership.create({
+      userId: member!.id,
+      organizationId: org!.id,
+      role: 'OWNER',
+    });
+  }
+
+  // The MazzyAI organization and its primary user, an ADMIN member. Unlike the
+  // tenant login above, this one is reset on every run — password, status and
+  // an ADMIN systemRole — so an earlier seed that made this account a superuser
+  // is corrected rather than left behind.
+  let adminOrg = await db.orm.public.Organization.where({
+    slug: ADMIN_ORG_SLUG,
+  })
+    .select('id')
+    .first();
+  if (!adminOrg) {
+    await db.orm.public.Organization.create({
+      name: 'MazzyAI',
+      slug: ADMIN_ORG_SLUG,
+      timezone: 'Europe/Berlin',
+      status: 'ACTIVE',
+      billingEmail: ORG_ADMIN.email,
+      notificationEmail: ORG_ADMIN.email,
+    });
+    adminOrg = await db.orm.public.Organization.where({ slug: ADMIN_ORG_SLUG })
+      .select('id')
+      .first();
+    console.log('created organization: MazzyAI');
+  }
+
+  const adminHash = await bcrypt.hash(ORG_ADMIN.password, 10);
+  let orgAdmin = await db.orm.public.User.where({ email: ORG_ADMIN.email })
+    .select('id')
+    .first();
+  if (orgAdmin) {
+    await db.orm.public.User.where({ id: orgAdmin.id }).update({
+      passwordHash: adminHash,
+      systemRole: 'ADMIN',
+      status: 'ACTIVE',
+    });
+    console.log('updated org admin:', ORG_ADMIN.email);
+  } else {
+    await db.orm.public.User.create({
+      email: ORG_ADMIN.email,
+      name: ORG_ADMIN.name,
+      passwordHash: adminHash,
+      systemRole: 'ADMIN',
+      status: 'ACTIVE',
+    });
+    orgAdmin = await db.orm.public.User.where({ email: ORG_ADMIN.email })
+      .select('id')
+      .first();
+    console.log('created org admin:', ORG_ADMIN.email);
+  }
+  const adminMembership = await db.orm.public.Membership.where({
+    userId: orgAdmin!.id,
+    organizationId: adminOrg!.id,
+  })
+    .select('id')
+    .first();
+  if (adminMembership) {
+    await db.orm.public.Membership.where({ id: adminMembership.id }).update({
+      role: 'ADMIN',
+      status: 'ACTIVE',
+    });
+  } else {
+    await db.orm.public.Membership.create({
+      userId: orgAdmin!.id,
+      organizationId: adminOrg!.id,
+      role: 'ADMIN',
+    });
+  }
+
+  // Meetings for first-org and every fixture org. An org that already has any
+  // is left alone, so re-running never stacks a second set on top.
+  let meetingsCreated = 0;
+  const today = new Date();
+  for (const slug of [
+    ORG_SLUG,
+    ADMIN_ORG_SLUG,
+    ...ORG_FIXTURES.map((f) => f.slug),
+  ]) {
+    const target = await db.orm.public.Organization.where({ slug })
+      .select('id')
+      .first();
+    if (!target) continue;
+    const has = await db.orm.public.Meeting.where({ organizationId: target.id })
+      .select('id')
+      .first();
+    if (has) continue;
+    for (const meeting of meetingsFor(today)) {
+      await db.orm.public.Meeting.create({
+        ...meeting,
+        organizationId: target.id,
+      });
+      meetingsCreated += 1;
+    }
+  }
+  console.log(`meetings created: ${meetingsCreated}`);
 }
 
 await main();

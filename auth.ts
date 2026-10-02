@@ -15,19 +15,77 @@ import {
 } from '@/app/lib/email';
 
 /** Mirrors the SystemRole enum in src/prisma/contract.prisma. */
-export type Role = 'USER' | 'SUPPORT' | 'SUPERUSER';
+export type Role = 'USER' | 'ADMIN' | 'SUPERUSER';
 
 export type SessionUser = {
   id: string;
   name: string | null;
   email: string | null;
   role: Role;
+  /** Set while a superuser is signed in as someone else: who to return to. */
+  impersonatorId?: string;
 };
 
+/** The account a superuser's profile banner switches into. */
+export const ADMIN_ACCOUNT_EMAIL = 'admin@mazzyai.com';
+
+// The one-click switch signs in without a password, so the only thing that may
+// unlock it is a token this server minted a moment ago. A server action checks
+// who is asking and signs one; the provider below accepts nothing else, so
+// POSTing to the callback route by hand gets nowhere.
+const SWITCH_TTL_MS = 60_000;
+
+type SwitchPayload = { toId: string; impersonatorId?: string; exp: number };
+
+function switchKey(): string {
+  const key = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  if (!key) throw new Error('AUTH_SECRET is not set.');
+  return key;
+}
+
+function macOf(body: string): string {
+  // Prefixed so a MAC made here can't be replayed as one for another purpose.
+  return crypto
+    .createHmac('sha256', switchKey())
+    .update(`switch-account:${body}`)
+    .digest('base64url');
+}
+
+export function signSwitch(payload: Omit<SwitchPayload, 'exp'>): string {
+  const body = Buffer.from(
+    JSON.stringify({ ...payload, exp: Date.now() + SWITCH_TTL_MS }),
+  ).toString('base64url');
+  return `${body}.${macOf(body)}`;
+}
+
+function verifySwitch(token: unknown): SwitchPayload | null {
+  if (typeof token !== 'string') return null;
+  const [body, mac] = token.split('.');
+  if (!body || !mac) return null;
+  const expected = Buffer.from(macOf(body));
+  const given = Buffer.from(mac);
+  if (
+    expected.length !== given.length ||
+    !crypto.timingSafeEqual(expected, given)
+  ) {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(
+      Buffer.from(body, 'base64url').toString(),
+    ) as SwitchPayload;
+    return typeof payload.toId === 'string' && payload.exp > Date.now()
+      ? payload
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 // Ranked rather than matched by name: one numeric comparison expresses
-// "SUPERUSER may do anything SUPPORT may", so there are no per-role permission
+// "SUPERUSER may do anything ADMIN may", so there are no per-role permission
 // lists to keep in sync as the app grows.
-const RANK: Record<Role, number> = { USER: 0, SUPPORT: 1, SUPERUSER: 2 };
+const RANK: Record<Role, number> = { USER: 0, ADMIN: 1, SUPERUSER: 2 };
 
 /** True when `role` sits at or above `min` in the hierarchy. */
 export function hasRole(role: Role | null | undefined, min: Role): boolean {
@@ -185,13 +243,23 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = (user as { systemRole?: Role }).systemRole ?? 'USER';
+        // Written on every sign-in, so a normal login (or the trip back)
+        // clears it. It lives in the encrypted token, which is why the person
+        // it describes can't set it.
+        token.impersonatorId = (
+          user as { impersonatorId?: string }
+        ).impersonatorId;
       }
       return token;
     },
     // Copies them onto the session so every page and action reads the role
     // without touching the database.
     session({ session, token }) {
-      Object.assign(session.user, { id: token.id, role: token.role });
+      Object.assign(session.user, {
+        id: token.id,
+        role: token.role,
+        impersonatorId: token.impersonatorId,
+      });
       return session;
     },
   },
@@ -226,6 +294,33 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
         }
         console.log('Invalid credentials');
         return null;
+      },
+    }),
+    // Passwordless account switch. Only reachable with a token from
+    // signSwitch(), which switchAccountAction mints after checking the caller.
+    Credentials({
+      id: 'switch-account',
+      credentials: { token: {} },
+      async authorize(credentials) {
+        const payload = verifySwitch(credentials?.token);
+        if (!payload) return null;
+
+        const user = await db.orm.public.User.where({ id: payload.toId })
+          .select('id', 'name', 'email', 'status', 'systemRole')
+          .first();
+        if (!user || user.status === 'DISABLED') return null;
+        // A trip back (no impersonatorId) may only land on a superuser, so the
+        // way home can never be used to become anyone else.
+        if (!payload.impersonatorId && user.systemRole !== 'SUPERUSER') {
+          return null;
+        }
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          systemRole: user.systemRole,
+          impersonatorId: payload.impersonatorId,
+        };
       },
     }),
     {
@@ -275,7 +370,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
  *
  * Use it in pages and layouts to decide what to render:
  *   const me = await currentUser();
- *   {hasRole(me?.role, 'SUPPORT') && <AdminPanel />}
+ *   {hasRole(me?.role, 'ADMIN') && <AdminPanel />}
  */
 export async function currentUser(): Promise<SessionUser | null> {
   const user = (await auth())?.user as SessionUser | undefined;

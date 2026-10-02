@@ -2,7 +2,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn } from "@/app/lib/utils.ts"
 import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
 import ThemeToggle from '@/app/ui/theme-toggle';
 import LogoutButton from '@/app/ui/log-out-button';
