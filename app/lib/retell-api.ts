@@ -9,7 +9,9 @@ export async function retell(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
-): Promise<{ ok: true; data: any } | { ok: false; message: string }> {
+): Promise<
+  { ok: true; data: any } | { ok: false; message: string; status?: number }
+> {
   // A FormData body goes out as-is: fetch has to set the multipart boundary in
   // the Content-Type itself, so the header must not be set here.
   const isForm = body instanceof FormData;
@@ -33,6 +35,7 @@ export async function retell(
     return {
       ok: false,
       message: data?.message ?? `Retell error (${res.status}).`,
+      status: res.status,
     };
   }
   return { ok: true, data };

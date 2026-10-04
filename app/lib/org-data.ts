@@ -195,3 +195,22 @@ export async function fetchBudgetState(
     throw new Error("Failed to fetch the organization's spend.");
   }
 }
+
+/** Minutes every organization gets each month. */
+export const MONTHLY_MINUTES = 500;
+
+/**
+ * How many organizations a minutes chart covers: one, or all of them when no
+ * id is given. The allowance is MONTHLY_MINUTES each.
+ */
+export async function fetchOrganizationCount(organizationId?: string) {
+  try {
+    let orgs = db.orm.public.Organization;
+    if (organizationId) orgs = orgs.where({ id: organizationId });
+    const { total } = await orgs.aggregate((a) => ({ total: a.count() }));
+    return total;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to count organizations.');
+  }
+}

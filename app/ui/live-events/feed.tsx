@@ -1,5 +1,6 @@
 import {
   CalendarDaysIcon,
+  ChevronDownIcon,
   EnvelopeIcon,
   PhoneArrowDownLeftIcon,
 } from '@heroicons/react/24/outline';
@@ -53,15 +54,22 @@ export default async function LiveEventsFeed({
 
   return (
     // The frame scrolls on its own, so a long feed doesn't push the page down.
-    <div className={`${frame} max-h-[32rem] overflow-y-auto`}>
+    // overflow-x-hidden: a row mid-slide sits outside the frame and would
+    // otherwise flash a horizontal scrollbar.
+    <div className={`${frame} max-h-[32rem] overflow-y-auto overflow-x-hidden`}>
     <ul className="divide-y divide-white/[0.06]">
       {events.map((e) => {
         const EventIcon = icons[e.kind];
         return (
-          <li
-            key={e.id}
-            className="flex items-start gap-3 px-4 py-3"
-          >
+          // The animation runs when the element is created. The 5-second
+          // refresh keeps existing rows' DOM nodes (same key), so only a row
+          // that is new to the list slides in.
+          <li key={e.id} className="live-row-in">
+            {/* A native disclosure: no state to keep. The page re-renders every
+                few seconds, but the element keeps its key, so an opened row
+                stays open. */}
+            <details className="group">
+              <summary className="flex cursor-pointer list-none items-start gap-3 px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-red-lit [&::-webkit-details-marker]:hidden">
             <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.06] text-gray-600">
               <EventIcon className="w-4" />
             </span>
@@ -74,6 +82,10 @@ export default async function LiveEventsFeed({
                   />
                 )}
                 {e.title}
+                <ChevronDownIcon
+                  aria-hidden="true"
+                  className="w-3.5 shrink-0 text-gray-500 transition-transform duration-200 group-open:rotate-180 group-hover:text-brand-red-lit"
+                />
                 <span className="truncate font-normal text-gray-600">
                   {e.subject}
                 </span>
@@ -91,6 +103,27 @@ export default async function LiveEventsFeed({
             >
               {ago(e.at)}
             </time>
+              </summary>
+
+              <div className="space-y-3 px-4 pb-4 pl-[3.75rem] text-xs">
+                <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1">
+                  {e.fields.map(([label, value]) => (
+                    <div key={label} className="contents">
+                      <dt className="text-gray-500">{label}</dt>
+                      <dd className="break-words text-gray-900">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {e.blocks.map((b) => (
+                  <div key={b.label}>
+                    <p className="mb-1 text-gray-500">{b.label}</p>
+                    <p className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words rounded-md border border-white/[0.07] bg-black/20 p-3 leading-relaxed text-gray-600">
+                      {b.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </details>
           </li>
         );
       })}

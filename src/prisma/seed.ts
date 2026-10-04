@@ -723,10 +723,15 @@ async function main() {
       .select('id')
       .first();
     if (has) continue;
-    for (const meeting of meetingsFor(today)) {
+    const agents = await db.orm.public.Agent.where({ organizationId: target.id })
+      .select('id')
+      .all();
+    for (const [i, meeting] of meetingsFor(today).entries()) {
       await db.orm.public.Meeting.create({
         ...meeting,
         organizationId: target.id,
+        // Two in three were booked by an agent; the rest were added by hand.
+        ...(agents.length && i % 3 ? { agentId: agents[i % agents.length].id } : {}),
       });
       meetingsCreated += 1;
     }

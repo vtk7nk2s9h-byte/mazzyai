@@ -6,7 +6,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const nodes = [
-  { icon: CloudIcon, label: 'Provider', sub: 'Retell AI' },
+  { icon: CloudIcon, label: 'Provider', sub: 'AI Voice' },
   { icon: CpuChipIcon, label: 'MazzyAI', sub: 'Platform' },
   { icon: MicrophoneIcon, label: 'Live Session', sub: 'Calls' },
 ];

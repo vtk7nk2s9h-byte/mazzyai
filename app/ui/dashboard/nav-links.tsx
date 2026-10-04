@@ -9,6 +9,8 @@ import {
   Cog6ToothIcon,
   CpuChipIcon,
   SignalIcon,
+  ChartBarIcon,
+  BeakerIcon,
 } from '@heroicons/react/24/outline';
 import { clsx } from 'clsx';
 import Link from 'next/link';
@@ -47,6 +49,14 @@ const liveEventsLink = {
   icon: SignalIcon,
 };
 
+// Call totals and trends. Same audience as Agents: a superuser reads every
+// organization, an organization admin their own.
+const analyticsLink = {
+  name: 'Analytics',
+  href: '/dashboard/analytics',
+  icon: ChartBarIcon,
+};
+
 // Appended only for superusers. The link is a convenience, not the guard — the
 // page itself re-checks the role, since anyone can type the URL.
 const superuserLinks = [
@@ -58,6 +68,11 @@ const superuserLinks = [
   { name: 'Team', href: '/dashboard/team', icon: UserGroupIcon },
   agentsLink,
   liveEventsLink,
+  analyticsLink,
+  // Dev only; the page itself 404s in production.
+  ...(process.env.NODE_ENV === 'production'
+    ? []
+    : [{ name: 'Test lab', href: '/dashboard/test-lab', icon: BeakerIcon }]),
 ];
 
 // A superuser reads call logs, invoices and the agenda per tenant, from inside
@@ -124,7 +139,7 @@ export default function NavLinks({
             ...superuserLinks,
           ]
         : isOrgAdmin
-          ? [...links, agentsLink, liveEventsLink]
+          ? [...links, agentsLink, liveEventsLink, analyticsLink]
           : links
       ).map((link) => (
         <NavItem key={link.name} link={link} pathname={pathname} />

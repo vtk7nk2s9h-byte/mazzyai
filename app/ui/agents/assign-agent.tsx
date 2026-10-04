@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from 'react';
 import { LinkIcon } from '@heroicons/react/24/outline';
 
 import { assignRetellAgent } from '@/app/lib/retell-actions';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toastError, toastSuccess } from '@/hooks/use-toast';
 
 /**
@@ -80,25 +81,22 @@ export default function AssignAgent({
           {organizations.length === 0 ? (
             <p className="mt-4 text-sm text-gray-500">No organizations yet.</p>
           ) : (
-            <fieldset className="mt-4 max-h-64 space-y-1 overflow-y-auto">
-              <legend className="sr-only">Organizations</legend>
+            <RadioGroup
+              aria-label="Organizations"
+              value={choice}
+              onValueChange={setChoice}
+              className="mt-4 max-h-64 gap-1 overflow-y-auto"
+            >
               {organizations.map((org) => (
                 <label
                   key={org.id}
-                  className="flex cursor-pointer items-center gap-2.5 rounded-md border border-transparent px-2.5 py-2 text-sm transition-colors hover:bg-white/[0.04] has-[:checked]:border-brand-red-lit/50 has-[:checked]:bg-maroon-500/30"
+                  className="flex cursor-pointer items-center gap-2.5 rounded-md border border-transparent px-2.5 py-2 text-sm transition-colors hover:bg-white/[0.04] has-[[data-state=checked]]:border-brand-red-lit/50 has-[[data-state=checked]]:bg-maroon-500/30"
                 >
-                  <input
-                    type="radio"
-                    name="organization"
-                    value={org.id}
-                    checked={choice === org.id}
-                    onChange={() => setChoice(org.id)}
-                    className="accent-[#ff2e43]"
-                  />
+                  <RadioGroupItem value={org.id} />
                   {org.name}
                 </label>
               ))}
-            </fieldset>
+            </RadioGroup>
           )}
 
           <p aria-live="polite" className="mt-3 min-h-4 text-xs text-red-400">

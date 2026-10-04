@@ -9,6 +9,7 @@ import { retell, retellStorageSettings } from '@/app/lib/retell-api';
 import { db } from '@/src/prisma/db';
 import {
   AGENT_LANGUAGES,
+  AMBIENT_SOUNDS,
   ALL_VOICE_MODELS,
   RETELL_LANGUAGES,
   RETELL_MODELS,
@@ -264,6 +265,150 @@ export const updateAgentStatus = withRoleAction(
     }
     revalidatePath(`/dashboard/organizations/${slug}`);
     revalidatePath('/dashboard/agents');
+    return { ok: true as const };
+  },
+);
+
+// A Retell agent id goes into the URL path, so only that shape is let through.
+const AGENT_ID = /^agent_[A-Za-z0-9]+$/;
+
+const AgentVoiceSchema = z.object({
+  voiceId: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9_.-]{1,100}$/, 'Please pick a voice.'),
+  // null clears it, so Retell's default model for the voice applies.
+  voiceModel: z.string().nullable(),
+  voiceSpeed: z.number().min(0.5).max(2),
+  voiceTemperature: z.number().min(0).max(2),
+  volume: z.number().min(0).max(2),
+  voiceEmotion: z.enum(VOICE_EMOTIONS).nullable(),
+  language: z
+    .string()
+    .trim()
+    .regex(/^(multi|[a-z]{2,3}(-[A-Za-z0-9]{2,4})?)$/, 'Unknown language.'),
+});
+
+export type AgentVoiceInput = z.input<typeof AgentVoiceSchema>;
+
+/**
+ * Saves everything on the agent page's Voice card in one PATCH: the voice, its
+ * model, speed, temperature, volume, emotion and the language. Retell stays the
+ * judge of combinations (a model that doesn't suit the voice) and says why.
+ */
+export const updateAgentVoice = withRoleAction(
+  'USER',
+  async (_me, agentId: string, input: AgentVoiceInput) => {
+    if (!AGENT_ID.test(agentId)) return { error: 'Unknown agent.' };
+    const parsed = AgentVoiceSchema.safeParse(input);
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? 'Check the values.' };
+    }
+    const v = parsed.data;
+    if (v.voiceModel !== null && !ALL_VOICE_MODELS.includes(v.voiceModel)) {
+      return { error: 'Unknown voice model.' };
+    }
+
+    const res = await retell('PATCH', `/update-agent/${agentId}`, {
+      voice_id: v.voiceId,
+      voice_model: v.voiceModel,
+      voice_speed: v.voiceSpeed,
+      voice_temperature: v.voiceTemperature,
+      volume: v.volume,
+      voice_emotion: v.voiceEmotion,
+      language: v.language,
+    });
+    if (!res.ok) return { error: res.message };
+    revalidatePath('/dashboard/agents');
+    revalidatePath(`/dashboard/agents/${agentId}`);
+    return { ok: true as const };
+  },
+);
+
+const AgentConversationSchema = z.object({
+  responsiveness: z.number().min(0).max(1),
+  interruptionSensitivity: z.number().min(0).max(1),
+  // Retell's minimum is 10 s; no maximum is documented, so Retell judges that.
+  silenceSeconds: z.number().int().min(10).max(3600),
+  // 1 minute to 2 hours, from the update-agent docs.
+  maxCallMinutes: z.number().int().min(1).max(120),
+  // Absent when the agent uses a custom mode, which this card can't set.
+  sttMode: z.enum(STT_MODES).optional(),
+  boostedKeywords: z.array(z.string().trim().min(1).max(100)).max(100),
+  ambientSound: z.enum(AMBIENT_SOUNDS).nullable(),
+  // Only sent when the switch was changed: "on" means hang up on voicemail, so
+  // sending it unchanged could overwrite a different action set in Retell.
+  voicemail: z.boolean().optional(),
+});
+
+export type AgentConversationInput = z.input<typeof AgentConversationSchema>;
+
+/**
+ * Saves everything on the agent page's Conversation card in one PATCH, except
+ * backchannel, which that card shows but does not edit.
+ */
+export const updateAgentConversation = withRoleAction(
+  'USER',
+  async (_me, agentId: string, input: AgentConversationInput) => {
+    if (!AGENT_ID.test(agentId)) return { error: 'Unknown agent.' };
+    const parsed = AgentConversationSchema.safeParse(input);
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? 'Check the values.' };
+    }
+    const v = parsed.data;
+
+    const res = await retell('PATCH', `/update-agent/${agentId}`, {
+      responsiveness: v.responsiveness,
+      interruption_sensitivity: v.interruptionSensitivity,
+      end_call_after_silence_ms: v.silenceSeconds * 1000,
+      max_call_duration_ms: v.maxCallMinutes * 60_000,
+      ...(v.sttMode && { stt_mode: v.sttMode }),
+      // null clears the list.
+      boosted_keywords: v.boostedKeywords.length ? v.boostedKeywords : null,
+      ambient_sound: v.ambientSound,
+      ...(v.voicemail !== undefined && {
+        voicemail_option: v.voicemail ? { action: { type: 'hangup' } } : null,
+      }),
+    });
+    if (!res.ok) return { error: res.message };
+    revalidatePath('/dashboard/agents');
+    revalidatePath(`/dashboard/agents/${agentId}`);
+    return { ok: true as const };
+  },
+);
+
+const AgentNameSchema = z.string().trim().min(1, 'Please enter a name.').max(100);
+
+/**
+ * Renames an agent on Retell, and on our own row when it is assigned to an
+ * organization, so the two tables keep showing the same name.
+ */
+export const renameAgent = withRoleAction(
+  'USER',
+  async (_me, agentId: string, name: string) => {
+    if (!AGENT_ID.test(agentId)) return { error: 'Unknown agent.' };
+    const parsed = AgentNameSchema.safeParse(name);
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? 'Please enter a name.' };
+    }
+
+    const res = await retell('PATCH', `/update-agent/${agentId}`, {
+      agent_name: parsed.data,
+    });
+    if (!res.ok) return { error: res.message };
+
+    try {
+      await db.orm.public.Agent.where({ retellAgentId: agentId }).update({
+        name: parsed.data,
+      });
+    } catch (error) {
+      // Retell has the new name; ours catches up the next time it is assigned.
+      console.error('Failed to rename the agent row:', error);
+    }
+
+    revalidatePath('/dashboard/agents');
+    revalidatePath(`/dashboard/agents/${agentId}`);
+    revalidatePath('/dashboard/organizations');
     return { ok: true as const };
   },
 );

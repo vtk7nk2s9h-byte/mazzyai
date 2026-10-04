@@ -63,6 +63,8 @@ export async function fetchKnowledge(organizationId: string) {
         'filePath',
         'sizeBytes',
         'status',
+        'errorMessage',
+        'agentId',
         'retellKnowledgeBaseId',
         'createdAt',
       )
@@ -74,35 +76,60 @@ export async function fetchKnowledge(organizationId: string) {
   }
 }
 
+/** An organization's agents, A to Z: the choices for "which agent uses this asset". */
+export async function fetchOrgAgentOptions(organizationId: string) {
+  try {
+    return await db.orm.public.Agent.where({ organizationId })
+      .select('id', 'name')
+      .orderBy((a) => a.name.asc())
+      .all();
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch agents.');
+  }
+}
+
 /**
  * Retell indexes a source after the upload returns, so a fresh row is saved as
- * INDEXING. This asks Retell where the knowledge base stands and settles the
- * rows; a failed lookup leaves them as they are for the next page load.
+ * INDEXING. This asks Retell where each pending asset's knowledge base stands
+ * and settles the rows; a failed lookup leaves them as they are for the next
+ * page load.
  */
 export async function syncKnowledgeStatus(
   docs: Awaited<ReturnType<typeof fetchKnowledge>>,
 ) {
-  const pending = docs.filter((d) => d.status === 'INDEXING');
-  const kbId = pending.find((d) => d.retellKnowledgeBaseId)?.retellKnowledgeBaseId;
-  if (!kbId) return false;
-
-  const res = await retell('GET', `/get-knowledge-base/${kbId}`).catch(() => null);
-  if (!res?.ok) return false;
-  const next =
-    res.data?.status === 'complete'
-      ? 'INDEXED'
-      : res.data?.status === 'error'
-        ? 'FAILED'
-        : null;
-  if (!next) return false;
+  const pending = docs.filter(
+    (d) => d.status === 'INDEXING' && d.retellKnowledgeBaseId,
+  );
+  let changed = false;
 
   for (const d of pending) {
+    const res = await retell(
+      'GET',
+      `/get-knowledge-base/${d.retellKnowledgeBaseId}`,
+    ).catch(() => null);
+    if (!res?.ok) continue;
+    // "complete" only means Retell finished trying: a source that could not be
+    // read (a URL that doesn't resolve, say) is reported in error_messages and
+    // leaves the base with nothing in it.
+    const problem: string | undefined = res.data?.error_messages?.[0];
+    const empty = !(res.data?.knowledge_base_sources ?? []).length;
+    const next =
+      res.data?.status === 'error' || (res.data?.status === 'complete' && empty && problem)
+        ? 'FAILED'
+        : res.data?.status === 'complete'
+          ? 'INDEXED'
+          : null;
+    if (!next) continue;
+
     await db.orm.public.KnowledgeDocument.where({ id: d.id }).update({
       status: next,
+      errorMessage: next === 'FAILED' ? (problem ?? 'Retell could not index this.').slice(0, 300) : null,
       ...(next === 'INDEXED' && { indexedAt: new Date().toISOString() }),
     });
+    changed = true;
   }
-  return true;
+  return changed;
 }
 
 /** One entry of POST /v2/list-agents `items`. */
@@ -172,6 +199,8 @@ export type RetellAgentDetail = {
   stt_mode?: 'fast' | 'accurate' | 'custom';
   boosted_keywords?: string[] | null;
   language?: string | string[];
+  /** ms since epoch: when the agent was last changed on Retell. */
+  last_modification_timestamp?: number;
   // null or absent means voicemail detection is off.
   voicemail_option?: { action: { type: string } } | null;
 };
@@ -196,18 +225,19 @@ export async function fetchRetellAgentDetail(
  */
 export async function fetchRetellAssignments() {
   try {
-    const rows = await db.orm.public.Agent.select('retellAgentId', 'status')
+    const rows = await db.orm.public.Agent.select('retellAgentId', 'status', 'createdAt')
       .include('organization', (o) => o.select('id', 'name'))
       .all();
     const byRetellId = new Map<
       string,
-      { id: string; name: string; status: string }
+      { id: string; name: string; status: string; createdAt: string }
     >();
     for (const row of rows) {
       if (row.retellAgentId && row.organization) {
         byRetellId.set(row.retellAgentId, {
           ...row.organization,
           status: row.status,
+          createdAt: row.createdAt,
         });
       }
     }
@@ -228,6 +258,93 @@ export async function fetchAssignableOrganizations() {
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch organizations.');
+  }
+}
+
+/**
+ * Everything Retell holds on one agent, for the detail page. Loosely typed on
+ * purpose: Retell adds fields often, and the page shows the ones that are there.
+ */
+export type RetellAgentFull = {
+  agent_id: string;
+  agent_name?: string | null;
+  channel?: string;
+  version?: number;
+  is_published?: boolean;
+  last_modification_timestamp?: number;
+  response_engine?: { type: string; llm_id?: string };
+  language?: string | string[];
+  voice_id?: string;
+  voice_model?: string | null;
+  voice_speed?: number;
+  voice_temperature?: number;
+  volume?: number;
+  voice_emotion?: string | null;
+  responsiveness?: number;
+  interruption_sensitivity?: number;
+  enable_backchannel?: boolean;
+  backchannel_frequency?: number;
+  end_call_after_silence_ms?: number;
+  max_call_duration_ms?: number;
+  stt_mode?: string;
+  boosted_keywords?: string[] | null;
+  voicemail_option?: unknown;
+  ambient_sound?: string | null;
+  data_storage_setting?: string;
+  data_storage_retention_days?: number;
+  webhook_url?: string | null;
+};
+
+/** One agent from Retell, or null if it doesn't exist there. */
+export async function fetchRetellAgentFull(
+  agentId: string,
+): Promise<RetellAgentFull | null> {
+  const apiKey = process.env.RETELL_API_KEY;
+  if (!apiKey) throw new Error('RETELL_API_KEY is not set.');
+
+  const res = await fetch(`https://api.retellai.com/get-agent/${agentId}`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    cache: 'no-store',
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Retell get-agent failed (${res.status}).`);
+  return res.json();
+}
+
+/** The prompt side of an agent that runs on a Retell LLM. */
+export type RetellLlm = {
+  llm_id: string;
+  model?: string;
+  model_temperature?: number;
+  general_prompt?: string | null;
+  begin_message?: string | null;
+  start_speaker?: string;
+  general_tools?: { type: string; name: string }[];
+  knowledge_base_ids?: string[];
+};
+
+/** A Retell LLM, or null when it can't be read (the page then just omits the prompt). */
+export async function fetchRetellLlm(llmId: string): Promise<RetellLlm | null> {
+  const apiKey = process.env.RETELL_API_KEY;
+  if (!apiKey) return null;
+
+  const res = await fetch(`https://api.retellai.com/get-retell-llm/${llmId}`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    cache: 'no-store',
+  }).catch(() => null);
+  return res?.ok ? res.json() : null;
+}
+
+/** Our record of a Retell agent: which organization it is assigned to, and its status. */
+export async function fetchAssignedAgent(retellAgentId: string) {
+  try {
+    return await db.orm.public.Agent.where({ retellAgentId })
+      .select('id', 'name', 'status', 'organizationId')
+      .include('organization', (o) => o.select('name', 'slug'))
+      .first();
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch the agent.');
   }
 }
 

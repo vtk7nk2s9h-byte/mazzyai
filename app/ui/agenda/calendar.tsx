@@ -1,6 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition, type FormEvent } from 'react';
+import {
+  useEffect,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import moment from 'moment';
 import {
@@ -10,14 +18,25 @@ import {
   type SlotInfo,
   type View,
 } from 'react-big-calendar';
+import withDragAndDrop, {
+  type DragFromOutsideItemArgs,
+  type EventInteractionArgs,
+} from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import '@/app/ui/agenda/calendar.css';
 
-import { createMeeting } from '@/app/lib/meeting-actions';
+import {
+  createMeeting,
+  rescheduleMeeting,
+  updateMeeting,
+  type UpdateMeetingInput,
+} from '@/app/lib/meeting-actions';
 import { MeetingStatusBadge } from '@/app/ui/organizations/status';
 import { toastError, toastSuccess } from '@/hooks/use-toast';
 
 const localizer = momentLocalizer(moment);
+const DnDCalendar = withDragAndDrop<AgendaEvent>(Calendar);
 
 /** A MeetingRow from meeting-data.ts, with the dates still ISO strings. */
 export type AgendaMeeting = {
@@ -25,6 +44,7 @@ export type AgendaMeeting = {
   title: string;
   description: string | null;
   attendeeName: string | null;
+  agent: { name: string } | null;
   location: string | null;
   startsAt: string;
   endsAt: string;
@@ -63,13 +83,21 @@ function defaultDraft(): Draft {
 export default function AgendaCalendar({
   organizationId,
   meetings,
+  heading,
 }: {
   organizationId: string;
   meetings: AgendaMeeting[];
+  /** The section title, so Create event can sit on its line. */
+  heading?: ReactNode;
 }) {
   const [view, setView] = useState<View>(Views.MONTH);
   const [date, setDate] = useState(() => new Date());
   const [selected, setSelected] = useState<AgendaEvent | null>(null);
+  // The meeting the form is editing; null when it is creating one.
+  const [editing, setEditing] = useState<AgendaEvent | null>(null);
+  // A meeting picked up from the "+N more" popup, which the calendar reports
+  // through handleDragStart and then drops like an item from outside it.
+  const dragged = useRef<AgendaEvent | null>(null);
   const [draft, setDraft] = useState<Draft>(defaultDraft);
   const [formKey, setFormKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -83,20 +111,43 @@ export default function AgendaCalendar({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const events: AgendaEvent[] = meetings.map(
-    ({ startsAt, endsAt, ...meeting }) => ({
-      ...meeting,
-      start: new Date(startsAt),
-      end: new Date(endsAt),
-    }),
+  // A dragged meeting is shown in its new place at once and kept there while
+  // the save runs; if the save fails the transition ends and it snaps back.
+  const [events, showMoved] = useOptimistic(
+    meetings.map(
+      ({ startsAt, endsAt, ...meeting }): AgendaEvent => ({
+        ...meeting,
+        start: new Date(startsAt),
+        end: new Date(endsAt),
+      }),
+    ),
+    (
+      list,
+      moved: { id: string; start: Date; end: Date; allDay: boolean },
+    ) =>
+      list.map((e) =>
+        e.id === moved.id
+          ? { ...e, start: moved.start, end: moved.end, allDay: moved.allDay }
+          : e,
+      ),
   );
+  // Its own transition: `pending` belongs to the create form's button.
+  const [, startMove] = useTransition();
+
+  // Client-only for the same timezone reason as the calendar: "now" differs.
+  const upcoming = mounted
+    ? events
+        .filter((e) => e.end > new Date() && e.status === 'SCHEDULED')
+        .slice(0, 8)
+    : [];
 
   function openDetails(event: AgendaEvent) {
     setSelected(event);
     details.current?.showModal();
   }
 
-  function openForm(next: Draft) {
+  function openForm(next: Draft, meeting: AgendaEvent | null = null) {
+    setEditing(meeting);
     setDraft(next);
     setFormKey((k) => k + 1); // remount, so the fields take the new defaults
     setError(null);
@@ -116,6 +167,64 @@ export default function AgendaCalendar({
     );
   }
 
+  // react-big-calendar calls this for a move and for a resize, when the mouse
+  // is released — so letting go is the confirmation, there is no form.
+  function reschedule({ event, start, end, isAllDay }: EventInteractionArgs<AgendaEvent>) {
+    const range = {
+      start: new Date(start),
+      end: new Date(end),
+      // The month grid has no all-day row, so a drop there keeps the flag.
+      allDay: view === Views.MONTH ? event.allDay : (isAllDay ?? event.allDay),
+    };
+    startMove(async () => {
+      showMoved({ id: event.id, ...range });
+      const result = await rescheduleMeeting(organizationId, event.id, {
+        startsAt: range.start.toISOString(),
+        endsAt: range.end.toISOString(),
+        allDay: range.allDay,
+      });
+      if ('error' in result) toastError('Meeting not moved', result.error);
+    });
+  }
+
+  // The form picks all-day ranges as inclusive dates, but one is stored to the
+  // midnight after its last day, so the end steps back a day on the way in.
+  function editMeeting(meeting: AgendaEvent) {
+    details.current?.close();
+    openForm(
+      {
+        start: meeting.start,
+        end: meeting.allDay
+          ? moment(meeting.end).subtract(1, 'day').toDate()
+          : meeting.end,
+        allDay: meeting.allDay,
+      },
+      meeting,
+    );
+  }
+
+  // A drop from the popup carries only the target, so the meeting keeps its
+  // length, and in the month grid its time of day: only the day changes.
+  function dropFromPopup({ start, allDay }: DragFromOutsideItemArgs) {
+    const event = dragged.current;
+    dragged.current = null;
+    if (!event) return;
+    const length = event.end.getTime() - event.start.getTime();
+    const newStart =
+      view === Views.MONTH
+        ? moment(event.start).add(
+            moment(start).startOf('day').diff(moment(event.start).startOf('day'), 'days'),
+            'days',
+          )
+        : moment(start);
+    reschedule({
+      event,
+      start: newStart.toDate(),
+      end: new Date(newStart.valueOf() + length),
+      isAllDay: allDay,
+    });
+  }
+
   function toggleAllDay(allDay: boolean) {
     setDraft((d) => ({ ...d, allDay }));
     setFormKey((k) => k + 1);
@@ -131,7 +240,7 @@ export default function AgendaCalendar({
     const allDay = draft.allDay;
 
     startTransition(async () => {
-      const result = await createMeeting(organizationId, {
+      const fields = {
         title: String(data.get('title') ?? ''),
         startsAt: start.toISOString(),
         endsAt: (allDay ? end.add(1, 'day') : end).toISOString(),
@@ -139,13 +248,22 @@ export default function AgendaCalendar({
         attendeeName: String(data.get('attendeeName') ?? ''),
         location: String(data.get('location') ?? ''),
         description: String(data.get('description') ?? ''),
-      });
+      };
+      const result = editing
+        ? await updateMeeting(organizationId, editing.id, {
+            ...fields,
+            status: String(data.get('status')) as UpdateMeetingInput['status'],
+          })
+        : await createMeeting(organizationId, fields);
       if ('error' in result) {
         setError(result.error);
-        toastError('Meeting not created', result.error);
+        toastError(editing ? 'Meeting not saved' : 'Meeting not created', result.error);
       } else {
         form.current?.close();
-        toastSuccess('Meeting created', 'It is on the agenda now.');
+        toastSuccess(
+          editing ? 'Meeting saved' : 'Meeting created',
+          editing ? 'Your changes are on the agenda.' : 'It is on the agenda now.',
+        );
       }
     });
   }
@@ -154,8 +272,9 @@ export default function AgendaCalendar({
   const fieldType = draft.allDay ? 'date' : 'datetime-local';
 
   return (
-    <div className="rounded-lg border border-white/[0.07] bg-white/[0.05] p-3 backdrop-blur-xl">
-      <div className="mb-3 flex justify-end">
+    <>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        {heading ?? <span />}
         <button
           type="button"
           onClick={() => openForm(defaultDraft())}
@@ -166,8 +285,10 @@ export default function AgendaCalendar({
         </button>
       </div>
 
+    <div className="rounded-lg border border-white/[0.07] bg-white/[0.05] p-3 backdrop-blur-xl">
+
       {mounted ? (
-        <Calendar<AgendaEvent>
+        <DnDCalendar
           localizer={localizer}
           events={events}
           titleAccessor="title"
@@ -181,6 +302,21 @@ export default function AgendaCalendar({
           selectable
           onSelectEvent={openDetails}
           onSelectSlot={onSelectSlot}
+          onEventDrop={reschedule}
+          onEventResize={reschedule}
+          handleDragStart={(event: AgendaEvent) => {
+            dragged.current = event;
+          }}
+          dragFromOutsideItem={() => dragged.current as AgendaEvent}
+          onDropFromOutside={dropFromPopup}
+          resizable
+          // A finished or cancelled meeting stays where it was.
+          draggableAccessor={(event) => event.status === 'SCHEDULED'}
+          resizableAccessor={(event) => event.status === 'SCHEDULED'}
+          tooltipAccessor={(event) =>
+            `${event.title}
+${event.agent ? `Booked by ${event.agent.name}` : 'Added manually'}`
+          }
           eventPropGetter={(event) => ({
             className: `meeting-${event.status.toLowerCase()}`,
           })}
@@ -188,6 +324,37 @@ export default function AgendaCalendar({
       ) : (
         <div style={{ height: 640 }} />
       )}
+
+      <section className="mt-4 border-t border-white/[0.07] pt-4">
+        <h2 className="mb-2 text-sm font-semibold">Upcoming events</h2>
+        {upcoming.length === 0 ? (
+          <p className="text-sm text-gray-500">Nothing coming up.</p>
+        ) : (
+          <ul className="divide-y divide-white/[0.07]">
+            {upcoming.map((event) => (
+              <li key={event.id}>
+                <button
+                  type="button"
+                  onClick={() => openDetails(event)}
+                  className="flex w-full items-center justify-between gap-4 py-2 text-left text-sm hover:text-brand-red-lit focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-red-lit"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">{event.title}</span>
+                    <span className="block text-xs text-gray-500">
+                      {event.allDay
+                        ? `${event.start.toLocaleDateString(undefined, { dateStyle: 'medium' })} · all day`
+                        : event.start.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                      {' · '}
+                      {event.agent?.name ?? 'Added manually'}
+                    </span>
+                  </span>
+                  <MeetingStatusBadge status={event.status} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <dialog
         ref={details}
@@ -213,6 +380,10 @@ export default function AgendaCalendar({
                   <dd>{selected.attendeeName}</dd>
                 </div>
               )}
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-500">Agent</dt>
+                <dd>{selected.agent?.name ?? 'Added manually'}</dd>
+              </div>
               {selected.location && (
                 <div className="flex justify-between gap-4">
                   <dt className="text-gray-500">Where</dt>
@@ -225,7 +396,14 @@ export default function AgendaCalendar({
                 {selected.description}
               </p>
             )}
-            <form method="dialog" className="mt-5 flex justify-end">
+            <form method="dialog" className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => editMeeting(selected)}
+                className="rounded-md border border-brand-red-lit/50 bg-maroon-500/30 px-3 py-1 text-xs font-medium text-white transition-colors hover:border-brand-red-lit hover:bg-maroon-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-red-lit"
+              >
+                Edit
+              </button>
               <button className="rounded-md border border-brand-red-lit/50 px-3 py-1 text-xs font-medium text-gray-900 transition-colors hover:border-brand-red-lit hover:bg-brand-red-lit/10 hover:text-brand-red-lit focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-red-lit">
                 Close
               </button>
@@ -240,7 +418,9 @@ export default function AgendaCalendar({
         className={dialogClass}
       >
         <form key={formKey} onSubmit={submit} className="space-y-4 p-5">
-          <h3 className="text-base font-semibold">Create event</h3>
+          <h3 className="text-base font-semibold">
+            {editing ? 'Edit event' : 'Create event'}
+          </h3>
 
           <div>
             <label className={label} htmlFor="meeting-title">
@@ -252,10 +432,29 @@ export default function AgendaCalendar({
               required
               maxLength={120}
               autoFocus
+              defaultValue={editing?.title}
               placeholder="Consultation"
               className={input}
             />
           </div>
+
+          {editing && (
+            <div>
+              <label className={label} htmlFor="meeting-status">
+                Status
+              </label>
+              <select
+                id="meeting-status"
+                name="status"
+                defaultValue={editing.status}
+                className={`${input} [&>option]:bg-gray-100`}
+              >
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+          )}
 
           <label className="flex items-center gap-2 text-xs font-medium text-gray-900">
             <input
@@ -305,6 +504,7 @@ export default function AgendaCalendar({
                 id="meeting-with"
                 name="attendeeName"
                 maxLength={120}
+                defaultValue={editing?.attendeeName ?? ''}
                 placeholder="Optional"
                 className={input}
               />
@@ -317,6 +517,7 @@ export default function AgendaCalendar({
                 id="meeting-where"
                 name="location"
                 maxLength={120}
+                defaultValue={editing?.location ?? ''}
                 placeholder="Optional"
                 className={input}
               />
@@ -332,6 +533,7 @@ export default function AgendaCalendar({
               name="description"
               rows={3}
               maxLength={2000}
+              defaultValue={editing?.description ?? ''}
               placeholder="Optional"
               className={input}
             />
@@ -354,11 +556,18 @@ export default function AgendaCalendar({
               disabled={pending}
               className="rounded-md border border-brand-red-lit/50 bg-maroon-500/30 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:border-brand-red-lit hover:bg-maroon-500/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-red-lit disabled:opacity-60"
             >
-              {pending ? 'Creating…' : 'Create'}
+              {editing
+                ? pending
+                  ? 'Saving…'
+                  : 'Save'
+                : pending
+                  ? 'Creating…'
+                  : 'Create'}
             </button>
           </div>
         </form>
       </dialog>
     </div>
+    </>
   );
 }

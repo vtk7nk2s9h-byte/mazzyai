@@ -20,6 +20,7 @@ export async function fetchMeetings(organizationId: string) {
         'allDay',
         'status',
       )
+      .include('agent', (a) => a.select('name'))
       .orderBy((m) => m.startsAt.asc())
       .all();
   } catch (error) {

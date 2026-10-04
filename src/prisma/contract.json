@@ -80,6 +80,10 @@
       "model": "Organization",
       "namespace": "public"
     },
+    "paymentMethod": {
+      "model": "PaymentMethod",
+      "namespace": "public"
+    },
     "phoneNumber": {
       "model": "PhoneNumber",
       "namespace": "public"
@@ -252,6 +256,23 @@
               {
                 "name": "ABANDONED",
                 "value": "ABANDONED"
+              }
+            ]
+          },
+          "EmailType": {
+            "codecId": "pg/text@1",
+            "members": [
+              {
+                "name": "MARKETING",
+                "value": "MARKETING"
+              },
+              {
+                "name": "INVITATION",
+                "value": "INVITATION"
+              },
+              {
+                "name": "FOLLOW_UP",
+                "value": "FOLLOW_UP"
               }
             ]
           },
@@ -859,6 +880,21 @@
                 },
                 "to": {
                   "model": "KnowledgeDocument",
+                  "namespace": "public"
+                }
+              },
+              "meetings": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "agentId"
+                  ]
+                },
+                "to": {
+                  "model": "Meeting",
                   "namespace": "public"
                 }
               },
@@ -3138,6 +3174,13 @@
           },
           "Meeting": {
             "fields": {
+              "agentId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "allDay": {
                 "nullable": false,
                 "type": {
@@ -3230,6 +3273,22 @@
               }
             },
             "relations": {
+              "agent": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "agentId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Agent",
+                  "namespace": "public"
+                }
+              },
               "organization": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -3249,6 +3308,9 @@
             },
             "storage": {
               "fields": {
+                "agentId": {
+                  "column": "agentId"
+                },
                 "allDay": {
                   "column": "allDay"
                 },
@@ -3987,6 +4049,21 @@
                   "namespace": "public"
                 }
               },
+              "paymentMethods": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "organizationId"
+                  ]
+                },
+                "to": {
+                  "model": "PaymentMethod",
+                  "namespace": "public"
+                }
+              },
               "phoneNumbers": {
                 "cardinality": "1:N",
                 "on": {
@@ -4120,6 +4197,144 @@
               },
               "namespaceId": "public",
               "table": "organization"
+            }
+          },
+          "PaymentMethod": {
+            "fields": {
+              "billingAddress": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "brand": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "expMonth": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "expYear": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "holderName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "isDefault": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "last4": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "organizationId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "organization": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "organizationId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Organization",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "billingAddress": {
+                  "column": "billingAddress"
+                },
+                "brand": {
+                  "column": "brand"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "expMonth": {
+                  "column": "expMonth"
+                },
+                "expYear": {
+                  "column": "expYear"
+                },
+                "holderName": {
+                  "column": "holderName"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "isDefault": {
+                  "column": "isDefault"
+                },
+                "last4": {
+                  "column": "last4"
+                },
+                "organizationId": {
+                  "column": "organizationId"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "paymentMethod"
             }
           },
           "PhoneNumber": {
@@ -7441,6 +7656,11 @@
                 }
               ],
               "columns": {
+                "agentId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "allDay": {
                   "codecId": "pg/bool@1",
                   "default": {
@@ -7537,9 +7757,34 @@
                     "namespaceId": "public",
                     "tableName": "organization"
                   }
+                },
+                {
+                  "onDelete": "setNull",
+                  "source": {
+                    "columns": [
+                      "agentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "meeting"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "agent"
+                  }
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "agentId"
+                  ],
+                  "name": "meeting_agentId_idx_8d0ba4f0",
+                  "prefix": "meeting_agentId_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "organizationId"
@@ -8132,6 +8377,108 @@
                   ]
                 }
               ]
+            },
+            "paymentMethod": {
+              "columns": {
+                "billingAddress": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "brand": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "expMonth": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "expYear": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "holderName": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "isDefault": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "last4": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "organizationId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "organizationId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "paymentMethod"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "organization"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "organizationId"
+                  ],
+                  "name": "paymentMethod_organizationId_idx_2e17ef41",
+                  "prefix": "paymentMethod_organizationId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             },
             "phoneNumber": {
               "columns": {
@@ -9010,6 +9357,14 @@
                 "ABANDONED"
               ]
             },
+            "EmailType": {
+              "kind": "valueSet",
+              "values": [
+                "MARKETING",
+                "INVITATION",
+                "FOLLOW_UP"
+              ]
+            },
             "FeatureFlagScope": {
               "kind": "valueSet",
               "values": [
@@ -9158,10 +9513,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "381b5b45d284c2cf22da536fdcbbe75468e64c57fed16e71daf800fe60245ce5"
+    "storageHash": "f7f0cd2e8ad3dc269310724f1842df53bab9b33243309a2f007e52410d16aa2a"
   },
   "execution": {
-    "executionHash": "6760a6d2226f0147d871bacc92b5a9d27c99e201a0e2690431c2755fedd03529",
+    "executionHash": "a08f3a2501257b742a37a05ac319b98fab361082dff7c2c0a70ddb42c86e127c",
     "mutations": {
       "defaults": [
         {
@@ -9446,6 +9801,32 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "organization"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "paymentMethod"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "paymentMethod"
           }
         },
         {

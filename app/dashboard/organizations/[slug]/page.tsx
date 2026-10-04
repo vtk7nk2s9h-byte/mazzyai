@@ -23,6 +23,7 @@ import {
 } from '@/app/ui/organizations/status';
 import AgentStatusSelect from '@/app/ui/agents/agent-status-select';
 import Agenda from '@/app/ui/agenda/agenda';
+import Billing from '@/app/ui/billing/billing';
 import CallHandlingEdit from '@/app/ui/organizations/call-handling-edit';
 import OrgSelect from '@/app/ui/organizations/org-select';
 import { InvoicesTableSkeleton } from '@/app/ui/skeletons';
@@ -250,12 +251,18 @@ export default async function Page(props: {
         <InvoicesSection organizationId={org.id} currentPage={invoicesPage} />
       </Suspense>
 
+      <Suspense fallback={<InvoicesTableSkeleton />}>
+        <Billing organizationId={org.id} />
+      </Suspense>
+
       {/* Here for development: a tenant sees its own agenda from the sidebar,
           so this is the superuser's way to look at anyone else's. */}
-      <h2 className={`${lusitana.className} mt-10 text-xl`}>Agenda</h2>
-      <div className="mt-4">
+      <div className="mt-10">
         <Suspense fallback={<InvoicesTableSkeleton />}>
-          <Agenda organizationId={org.id} />
+          <Agenda
+            organizationId={org.id}
+            heading={<h2 className={`${lusitana.className} text-xl`}>Agenda</h2>}
+          />
         </Suspense>
       </div>
     </div>

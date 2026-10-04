@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import { fetchMeetings } from '@/app/lib/meeting-data';
 import AgendaCalendar from '@/app/ui/agenda/calendar';
 
@@ -9,9 +11,17 @@ import AgendaCalendar from '@/app/ui/agenda/calendar';
  */
 export default async function Agenda({
   organizationId,
+  heading,
 }: {
   organizationId: string;
+  heading?: ReactNode;
 }) {
   const meetings = await fetchMeetings(organizationId);
-  return <AgendaCalendar organizationId={organizationId} meetings={meetings} />;
+  return (
+    <AgendaCalendar
+      organizationId={organizationId}
+      meetings={meetings}
+      heading={heading}
+    />
+  );
 }

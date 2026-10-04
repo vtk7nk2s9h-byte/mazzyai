@@ -58,7 +58,7 @@ export default async function Page(props: {
           </p>
         }
       >
-        <ConnectionStatus showWebhook={isSuperuser} />
+        <ConnectionStatus showTunnel={isSuperuser} />
       </Suspense>
       <NetworkHeader />
       <AutoRefresh />

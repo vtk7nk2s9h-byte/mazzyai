@@ -4,6 +4,9 @@ import Table from '@/app/ui/invoices/table';
 import { CreateInvoice } from '@/app/ui/invoices/buttons';
 import { lusitana } from '@/app/ui/fonts';
 import { InvoicesTableSkeleton } from '@/app/ui/skeletons';
+import { currentUser } from '@/auth';
+import { fetchAgentsOrganizationId } from '@/app/lib/agent-data';
+import Billing from '@/app/ui/billing/billing';
 import { Suspense } from 'react';
 import { fetchInvoicesPages } from '@/app/lib/data';
 import { Metadata } from 'next';
@@ -22,6 +25,10 @@ export default async function Page(props: {
   const query = searchParams?.query || '';
   const currentPage = Number(searchParams?.page) || 1;
   const totalPages = await fetchInvoicesPages(query);
+  // Payment information and the subscription are for the organization's owners
+  // and admins; everyone else sees the invoices only.
+  const me = await currentUser();
+  const billingOrganizationId = me ? await fetchAgentsOrganizationId(me.id) : null;
 
 
   return (
@@ -39,6 +46,11 @@ export default async function Page(props: {
       <div className="mt-5 flex w-full justify-center">
         <Pagination totalPages={totalPages} />
       </div>
+      {billingOrganizationId && (
+        <Suspense fallback={<InvoicesTableSkeleton />}>
+          <Billing organizationId={billingOrganizationId} />
+        </Suspense>
+      )}
     </div>
   );
 }

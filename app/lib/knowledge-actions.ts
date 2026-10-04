@@ -37,10 +37,13 @@ const UrlSchema = z.object({
 
 /**
  * Adds one resource (text, URL or file) to the signed-in organization admin's
- * knowledge base. An organization has one Retell knowledge base, created with
- * the first resource and grown from then on; every voice agent of the
- * organization is pointed at it. The organization comes from the session's
- * membership, never from the form.
+ * knowledge base. The organization comes from the session's membership, never
+ * from the form.
+ *
+ * Every asset becomes a Retell knowledge base of its own. Retell attaches a
+ * whole knowledge base to an agent, never one file inside it, so this is what
+ * lets an asset be given to one agent and not another. A new asset applies to
+ * all of the organization's agents until it is assigned to one.
  */
 export const addKnowledge = withRoleAction('USER', async (me, form: FormData) => {
   if (!process.env.RETELL_API_KEY) return { error: 'RETELL_API_KEY is not set.' };
@@ -102,38 +105,20 @@ export const addKnowledge = withRoleAction('USER', async (me, form: FormData) =>
   }
 
   try {
-    const org = await db.orm.public.Organization.where({ id: organizationId })
-      .select('name')
-      .first();
-    const existing = await db.orm.public.KnowledgeDocument.where({
-      organizationId,
-    })
-      .select('retellKnowledgeBaseId')
-      .all();
-    let kbId =
-      existing.find((d) => d.retellKnowledgeBaseId)?.retellKnowledgeBaseId ??
-      null;
-
-    if (kbId) {
-      const res = await retell('POST', `/add-knowledge-base-sources/${kbId}`, upload);
-      if (!res.ok) return { error: res.message };
-    } else {
-      // Retell wants the name under 40 characters.
-      upload.append('knowledge_base_name', (org?.name ?? 'Knowledge base').slice(0, 39));
-      const res = await retell('POST', '/create-knowledge-base', upload);
-      if (!res.ok) return { error: res.message };
-      kbId = res.data.knowledge_base_id as string;
-    }
+    // Retell wants the name under 40 characters.
+    upload.append('knowledge_base_name', row.title.slice(0, 39));
+    const res = await retell('POST', '/create-knowledge-base', upload);
+    if (!res.ok) return { error: res.message };
 
     await db.orm.public.KnowledgeDocument.create({
       ...row,
       organizationId,
-      retellKnowledgeBaseId: kbId,
+      retellKnowledgeBaseId: res.data.knowledge_base_id as string,
       status: 'INDEXING',
       createdByUserId: me.id,
     });
 
-    const failed = await attachToAgents(organizationId, kbId);
+    const failed = await syncAgentKnowledge(organizationId);
     revalidatePath('/dashboard/agents');
     return {
       ok: true as const,
@@ -148,22 +133,165 @@ export const addKnowledge = withRoleAction('USER', async (me, form: FormData) =>
 });
 
 /**
- * Points every Retell agent of the organization at the knowledge base. The
- * knowledge base lives on the agent's Retell LLM, and the docs don't say
- * whether `knowledge_base_ids` is replaced or merged, so this reads the current
- * list and sends back the whole union. Returns how many agents failed.
+ * Sets which voice agent an asset applies to: one of the organization's agents,
+ * or null for all of them. The document id comes from the browser, so the
+ * document and the agent are both checked against the caller's own
+ * organization before anything changes.
  */
-async function attachToAgents(organizationId: string, kbId: string) {
-  const agents = await db.orm.public.Agent.where({ organizationId })
-    .select('retellAgentId')
-    .all();
+export const setKnowledgeAgent = withRoleAction(
+  'USER',
+  async (me, documentId: string, agentId: string | null) => {
+    const organizationId = await fetchAgentsOrganizationId(me.id);
+    if (!organizationId) {
+      return { error: 'Only an organization admin can change this.' };
+    }
+
+    try {
+      const doc = await db.orm.public.KnowledgeDocument.where({
+        id: documentId,
+        organizationId,
+      })
+        .select('id')
+        .first();
+      if (!doc) return { error: 'That resource no longer exists.' };
+
+      if (agentId) {
+        const agent = await db.orm.public.Agent.where({
+          id: agentId,
+          organizationId,
+        })
+          .select('id')
+          .first();
+        if (!agent) return { error: 'That agent no longer exists.' };
+      }
+
+      await db.orm.public.KnowledgeDocument.where({ id: doc.id }).update({
+        agentId,
+      });
+
+      const failed = await syncAgentKnowledge(organizationId);
+      revalidatePath('/dashboard/agents');
+      return failed
+        ? {
+            error: `Saved, but ${failed} agent${failed === 1 ? '' : 's'} could not be updated in Retell.`,
+          }
+        : { ok: true as const };
+    } catch (error) {
+      console.error('Failed to assign knowledge:', error);
+      return { error: 'Could not change that. Please try again.' };
+    }
+  },
+);
+
+/**
+ * Deletes an asset: takes its knowledge base off the organization's agents,
+ * deletes it on Retell, then removes the row. The document id comes from the
+ * browser, so it is checked against the caller's own organization first.
+ *
+ * Nothing is deleted if an agent couldn't be detached, so a base never
+ * disappears from under an agent that still points at it; the row stays and the
+ * delete can be tried again.
+ */
+export const deleteKnowledge = withRoleAction(
+  'USER',
+  async (me, documentId: string) => {
+    const organizationId = await fetchAgentsOrganizationId(me.id);
+    if (!organizationId) {
+      return { error: 'Only an organization admin can delete resources.' };
+    }
+
+    try {
+      const doc = await db.orm.public.KnowledgeDocument.where({
+        id: documentId,
+        organizationId,
+      })
+        .select('id', 'retellKnowledgeBaseId')
+        .first();
+      if (!doc) return { error: 'That resource no longer exists.' };
+
+      const failed = await syncAgentKnowledge(organizationId, doc.id);
+      if (failed) {
+        return {
+          error: `Could not detach it from ${failed} agent${failed === 1 ? '' : 's'} in Retell, so nothing was deleted. Please try again.`,
+        };
+      }
+
+      // A base shared with another asset (from before each asset had its own)
+      // must stay: deleting it would empty the other one too.
+      const kbId = doc.retellKnowledgeBaseId;
+      const shared = kbId
+        ? (
+            await db.orm.public.KnowledgeDocument.where({ organizationId })
+              .select('id', 'retellKnowledgeBaseId')
+              .all()
+          ).some((d) => d.id !== doc.id && d.retellKnowledgeBaseId === kbId)
+        : false;
+
+      if (kbId && !shared) {
+        const res = await retell('DELETE', `/delete-knowledge-base/${kbId}`);
+        // Already gone on Retell's side is the outcome we wanted.
+        if (!res.ok && res.status !== 404) return { error: res.message };
+      }
+
+      await db.orm.public.KnowledgeDocument.where({ id: doc.id }).delete();
+      revalidatePath('/dashboard/agents');
+      return { ok: true as const };
+    } catch (error) {
+      console.error('Failed to delete knowledge:', error);
+      return { error: 'Could not delete that. Please try again.' };
+    }
+  },
+);
+
+/**
+ * Makes every Retell agent of the organization hold exactly the knowledge bases
+ * its assets call for: those assigned to it, plus those assigned to no agent.
+ * Knowledge bases on an agent that this app never created are left alone.
+ * `without` is an asset about to be deleted: its knowledge base is taken off
+ * every agent even though the row still exists.
+ *
+ * The knowledge bases live on each agent's Retell LLM, and the docs don't say
+ * whether `knowledge_base_ids` is replaced or merged, so this reads the current
+ * list and sends back the whole thing. Returns how many agents failed.
+ */
+async function syncAgentKnowledge(organizationId: string, without?: string) {
+  const [docs, agents] = await Promise.all([
+    db.orm.public.KnowledgeDocument.where({ organizationId })
+      .select('id', 'agentId', 'retellKnowledgeBaseId')
+      .all(),
+    db.orm.public.Agent.where({ organizationId })
+      .select('id', 'retellAgentId')
+      .all(),
+  ]);
+
+  const ours = new Set(
+    docs.flatMap((d) => (d.retellKnowledgeBaseId ? [d.retellKnowledgeBaseId] : [])),
+  );
   let failed = 0;
 
-  for (const { retellAgentId } of agents) {
-    if (!retellAgentId) continue;
+  for (const agent of agents) {
+    if (!agent.retellAgentId) continue;
+    const wanted = new Set(
+      docs.flatMap((d) =>
+        d.retellKnowledgeBaseId &&
+        d.id !== without &&
+        (!d.agentId || d.agentId === agent.id)
+          ? [d.retellKnowledgeBaseId]
+          : [],
+      ),
+    );
+
     try {
-      const agent = await retell('GET', `/get-agent/${retellAgentId}`);
-      const llmId = agent.ok ? agent.data?.response_engine?.llm_id : null;
+      const found = await retell('GET', `/get-agent/${agent.retellAgentId}`);
+      if (!found.ok) {
+        failed += 1;
+        continue;
+      }
+      // Only agents on a Retell LLM can be linked here. A conversation-flow
+      // agent takes its knowledge bases through the flow's own nodes, so there
+      // is nothing for this to set — skipped, not counted as a failure.
+      if (found.data?.response_engine?.type !== 'retell-llm') continue;
+      const llmId = found.data.response_engine.llm_id;
       if (!llmId) {
         failed += 1;
         continue;
@@ -173,10 +301,14 @@ async function attachToAgents(organizationId: string, kbId: string) {
         failed += 1;
         continue;
       }
-      const ids: string[] = llm.data?.knowledge_base_ids ?? [];
-      if (ids.includes(kbId)) continue;
+      const current: string[] = llm.data?.knowledge_base_ids ?? [];
+      const next = [...current.filter((id) => !ours.has(id)), ...wanted];
+      const same =
+        next.length === current.length && next.every((id) => current.includes(id));
+      if (same) continue;
+
       const res = await retell('PATCH', `/update-retell-llm/${llmId}`, {
-        knowledge_base_ids: [...ids, kbId],
+        knowledge_base_ids: next,
       });
       if (!res.ok) failed += 1;
     } catch {

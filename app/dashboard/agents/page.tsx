@@ -46,17 +46,27 @@ export default async function Page(props: {
       <div className="w-full">
         <h1 className={`${lusitana.className} text-2xl`}>Agents</h1>
         <Suspense fallback={<InvoicesTableSkeleton />}>
-          <RetellAgentsTable page={retellPage} hideAssign />
+          <RetellAgentsTable
+            page={retellPage}
+            hideAssign
+            organizationId={organizationId}
+          />
         </Suspense>
 
-        <h2 className={`${lusitana.className} mt-10 text-xl`}>Knowledge base</h2>
+        <h2 className={`${lusitana.className} mt-10 text-xl`}>
+          Knowledge base and Resources
+        </h2>
         <p className="mt-1 text-sm text-gray-500">
-          What your voice agents can draw on when they answer.
+          What your voice agents can draw on when they answer.{' '}
+          <span className="font-semibold text-[#ff6b78]">Tip!</span> It is
+          recommended to delete the resources and add a new one to avoid
+          confusion.
         </p>
-        <KnowledgeForm />
+        {/* What is already there first, then the three ways to add more. */}
         <Suspense fallback={<InvoicesTableSkeleton />}>
           <KnowledgeList organizationId={organizationId} />
         </Suspense>
+        <KnowledgeForm />
       </div>
     );
   }

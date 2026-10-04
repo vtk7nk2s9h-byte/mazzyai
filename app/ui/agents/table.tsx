@@ -11,10 +11,9 @@ import {
 } from '@/app/lib/agent-data';
 import { voiceModelsFor } from '@/app/lib/retell-options';
 import Pagination from '@/app/ui/invoices/pagination';
+import AgentNameEdit from '@/app/ui/agents/agent-name-edit';
 import AssignAgent from '@/app/ui/agents/assign-agent';
 import LanguageSelect from '@/app/ui/agents/language-select';
-import SpeechRecognitionEdit from '@/app/ui/agents/speech-recognition-edit';
-import VoiceSettingsEdit from '@/app/ui/agents/voice-settings-edit';
 import VoiceModelEdit from '@/app/ui/agents/voice-model-edit';
 import VoicemailSwitch from '@/app/ui/agents/voicemail-switch';
 import { formatDateToLocal, paginate } from '@/app/lib/utils';
@@ -50,30 +49,9 @@ function OrgCell({
 
 const dash = <span className="text-gray-400">—</span>;
 
-/** "fast · 3 keywords" */
-function sttSummary(d: RetellAgentDetail) {
-  const keywords = d.boosted_keywords?.length ?? 0;
-  return [
-    d.stt_mode ?? 'fast',
-    keywords > 0 && `${keywords} ${keywords === 1 ? 'keyword' : 'keywords'}`,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-}
-
-/** "1× · temp 1 · vol 1 · calm" — only what Retell returned. */
-function voiceSettings(d: RetellAgentDetail) {
-  return [
-    d.voice_speed != null && `${d.voice_speed}× speed`,
-    d.voice_temperature != null && `temp ${d.voice_temperature}`,
-    d.volume != null && `vol ${d.volume}`,
-    d.interruption_sensitivity != null &&
-      `interrupt ${d.interruption_sensitivity}`,
-    d.voice_emotion,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-}
+/** "11:16 PM" — the time of day, for under a date. */
+const timeOf = (value: string | number) =>
+  new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(new Date(value));
 
 /**
  * Live from the Retell account. A failure (bad key, Retell down) shows inline
@@ -82,10 +60,13 @@ function voiceSettings(d: RetellAgentDetail) {
 export async function RetellAgentsTable({
   page = 1,
   hideAssign = false,
+  organizationId,
 }: {
   page?: number;
   /** Drops the assign control, for viewers who may edit agents but not move them. */
   hideAssign?: boolean;
+  /** The viewer's own organization: they may open only its agents' pages. */
+  organizationId?: string;
 }) {
   let agents;
   try {
@@ -135,15 +116,20 @@ export async function RetellAgentsTable({
               <tr>
                 <th className="px-4 py-4 font-medium">Name</th>
                 <th className="px-3 py-4 font-medium">Voice model</th>
-                <th className="px-3 py-4 font-medium">Voice settings</th>
                 <th className="px-3 py-4 font-medium">Voicemail</th>
-                <th className="px-3 py-4 font-medium">Speech recognition</th>
+                <th className="px-3 py-4 font-medium">Last updated</th>
+                <th className="px-3 py-4 font-medium">Created</th>
                 <th className="px-3 py-4 font-medium">Language</th>
               </tr>
             </thead>
             <tbody className="bg-gray-100">
               {agents.map((a, i) => {
                 const d = details[i];
+                // The same viewers who get the link get the pencil.
+                const canOpen =
+                  !hideAssign ||
+                  (!!organizationId &&
+                    assignments.get(a.agent_id)?.id === organizationId);
                 return (
                 <tr
                   key={a.agent_id}
@@ -156,7 +142,22 @@ export async function RetellAgentsTable({
                           status={assignments.get(a.agent_id)!.status}
                         />
                       )}
-                      {a.agent_name ?? '—'}
+                      {canOpen ? (
+                        <Link
+                          href={`/dashboard/agents/${a.agent_id}`}
+                          className={orgLink}
+                        >
+                          {a.agent_name ?? a.agent_id}
+                        </Link>
+                      ) : (
+                        (a.agent_name ?? '—')
+                      )}
+                      {canOpen && (
+                        <AgentNameEdit
+                          agentId={a.agent_id}
+                          name={a.agent_name ?? a.agent_id}
+                        />
+                      )}
                     </span>
                     {!hideAssign && (
                       <AssignAgent
@@ -187,26 +188,6 @@ export async function RetellAgentsTable({
                       dash
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3 text-xs text-gray-600">
-                    {d ? (
-                      <>
-                        {voiceSettings(d) || dash}
-                        <VoiceSettingsEdit
-                          agentId={a.agent_id}
-                          agentName={a.agent_name ?? a.agent_id}
-                          current={{
-                            speed: d.voice_speed ?? 1,
-                            temperature: d.voice_temperature ?? 1,
-                            volume: d.volume ?? 1,
-                            emotion: d.voice_emotion ?? null,
-                            interruption: d.interruption_sensitivity ?? 1,
-                          }}
-                        />
-                      </>
-                    ) : (
-                      dash
-                    )}
-                  </td>
                   <td className="whitespace-nowrap px-3 py-3">
                     {d ? (
                       <VoicemailSwitch
@@ -217,23 +198,28 @@ export async function RetellAgentsTable({
                       dash
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-3 capitalize">
-                    {d ? (
-                      <>
-                        {sttSummary(d)}
-                        {/* "custom" is set elsewhere; the dialog only offers
-                            fast and accurate, so leave it alone here. */}
-                        {d.stt_mode !== 'custom' && (
-                          <SpeechRecognitionEdit
-                            agentId={a.agent_id}
-                            agentName={a.agent_name ?? a.agent_id}
-                            current={{
-                              mode: d.stt_mode ?? 'fast',
-                              keywords: d.boosted_keywords ?? [],
-                            }}
-                          />
+                  <td className="whitespace-nowrap px-3 py-3">
+                    {d?.last_modification_timestamp ? (
+                      <div>
+                        {formatDateToLocal(
+                          new Date(d.last_modification_timestamp).toISOString(),
                         )}
-                      </>
+                        <p className="text-xs text-gray-500">
+                          {timeOf(d.last_modification_timestamp)}
+                        </p>
+                      </div>
+                    ) : (
+                      dash
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3">
+                    {assignments.get(a.agent_id)?.createdAt ? (
+                      <div title="When it was added to MazzyAI">
+                        {formatDateToLocal(assignments.get(a.agent_id)!.createdAt)}
+                        <p className="text-xs text-gray-500">
+                          {timeOf(assignments.get(a.agent_id)!.createdAt)}
+                        </p>
+                      </div>
                     ) : (
                       dash
                     )}
@@ -366,7 +352,16 @@ export default async function AgentsTable({
                   <td className="whitespace-nowrap py-3 pl-6 pr-3">
                     <p className="inline-flex items-center gap-2 font-medium">
                       <AgentStatusDot status={agent.status} />
-                      {agent.name}
+                      {agent.retellAgentId ? (
+                        <Link
+                          href={`/dashboard/agents/${agent.retellAgentId}`}
+                          className={orgLink}
+                        >
+                          {agent.name}
+                        </Link>
+                      ) : (
+                        agent.name
+                      )}
                     </p>
                     {agent.description && (
                       <p className="max-w-[32ch] truncate text-xs text-gray-500">

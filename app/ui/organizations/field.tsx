@@ -8,19 +8,25 @@ export function Section({
   title,
   description,
   action,
+  titleAction,
   children,
 }: {
   title: string;
   description?: string;
   /** Sits at the right of the header, e.g. an edit button. */
   action?: React.ReactNode;
+  /** Sits right after the title, e.g. the pencil that edits the whole card. */
+  titleAction?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section className="rounded-lg bg-gray-50 p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-medium text-gray-900">{title}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-medium text-gray-900">{title}</h2>
+            {titleAction}
+          </div>
           {description && (
             <p className="mt-0.5 text-xs text-gray-500">{description}</p>
           )}

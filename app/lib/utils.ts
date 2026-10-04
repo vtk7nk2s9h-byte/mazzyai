@@ -108,6 +108,15 @@ export type OrgStatus = (typeof ORG_STATUSES)[number];
 export const ORG_PLANS = ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'] as const;
 export type OrgPlan = (typeof ORG_PLANS)[number];
 
+/** The contract's EmailType members, with how each reads in the UI. */
+export const EMAIL_TYPES = ['MARKETING', 'INVITATION', 'FOLLOW_UP'] as const;
+export type EmailType = (typeof EMAIL_TYPES)[number];
+export const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
+  MARKETING: 'Marketing email',
+  INVITATION: 'Invitation email',
+  FOLLOW_UP: 'Follow-up email',
+};
+
 /** The contract's SystemRole members, least to most privileged. */
 export const USER_ROLES = ['USER', 'ADMIN', 'SUPERUSER'] as const;
 export type UserRole = (typeof USER_ROLES)[number];

@@ -1,4 +1,4 @@
-import { PAGE_SIZE } from '@/app/lib/utils';
+import { EMAIL_TYPES, PAGE_SIZE, type EmailType } from '@/app/lib/utils';
 import { db } from '@/src/prisma/db';
 
 /** Rows per page when the call log is paginated (the organization tables). */
@@ -37,6 +37,87 @@ export async function fetchCalls({
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to fetch calls.');
+  }
+}
+
+/**
+ * One call with every column the detail page shows, its agent and its
+ * organization. Null when the id matches nothing. Who may see it is the page's
+ * decision: this reads whatever it is asked for.
+ */
+export async function fetchCall(id: string) {
+  try {
+    return await db.orm.public.Call.where({ id })
+      .select(
+        'id',
+        'organizationId',
+        'retellCallId',
+        'direction',
+        'status',
+        'fromNumber',
+        'toNumber',
+        'callerName',
+        'startedAt',
+        'endedAt',
+        'durationMs',
+        'disconnectReason',
+        'transferredTo',
+        'transferredAt',
+        'recordingUrl',
+        'consentToRecord',
+        'transcript',
+        'summary',
+        'sentiment',
+        'dynamicVariables',
+        'collectedVariables',
+        'costCents',
+        'rawEvents',
+        'createdAt',
+      )
+      .include('agent', (a) => a.select('name'))
+      .include('organization', (o) => o.select('name', 'slug'))
+      .first();
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch the call.');
+  }
+}
+
+/**
+ * The emails the system sent because of one call, newest first. Each send is an
+ * AuditLog row (action "email.sent", target the Retell call id, diff
+ * { to, subject }) — see follow-up-email.ts.
+ */
+export async function fetchCallEmails(retellCallId: string) {
+  try {
+    const rows = await db.orm.public.AuditLog.where({
+      action: 'email.sent',
+      targetType: 'call',
+      targetId: retellCallId,
+    })
+      .select('id', 'diff', 'createdAt')
+      .orderBy((a) => a.createdAt.desc())
+      .all();
+    return rows.map((r) => {
+      const diff = (r.diff ?? {}) as {
+        to?: string;
+        subject?: string;
+        type?: string;
+      };
+      return {
+        id: r.id,
+        to: diff.to ?? null,
+        subject: diff.subject ?? null,
+        // Rows logged before the type was recorded were all follow-ups.
+        type: (EMAIL_TYPES as readonly string[]).includes(diff.type ?? '')
+          ? (diff.type as EmailType)
+          : ('FOLLOW_UP' as EmailType),
+        sentAt: r.createdAt,
+      };
+    });
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch the call emails.');
   }
 }
 

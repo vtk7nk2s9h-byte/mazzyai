@@ -68,7 +68,7 @@ export function CallDirectionBadge({ direction }: { direction: string }) {
       )}
       {direction === 'WEB' && (
         <>
-          <GlobeAltIcon className="w-4 text-gray-400" /> Web
+          <GlobeAltIcon className="w-4 text-brand-red-lit" /> Web
         </>
       )}
     </span>

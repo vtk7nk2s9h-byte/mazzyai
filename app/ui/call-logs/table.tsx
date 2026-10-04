@@ -10,7 +10,8 @@ import {
   CallStatusBadge,
   SentimentDot,
 } from '@/app/ui/call-logs/status';
-import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, PhoneIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 
 /**
  * Caller name with a small arrow that reveals the full summary on hover.
@@ -24,13 +25,21 @@ import { ChevronDownIcon } from '@heroicons/react/24/outline';
 function CallerName({
   name,
   summary,
+  href,
 }: {
   name: string;
   summary: string | null;
+  /** The call's page: the name is the link, the arrow beside it stays a hover. */
+  href: string;
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="font-medium">{name}</span>
+      <Link
+        href={href}
+        className="rounded font-medium transition-[color,text-shadow] duration-200 hover:text-brand-red-lit hover:[text-shadow:0_0_12px_rgba(255,46,67,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400"
+      >
+        {name}
+      </Link>
 
       {summary && (
         <span className="group relative inline-flex">
@@ -44,7 +53,7 @@ function CallerName({
 
           <span
             role="tooltip"
-            className="pointer-events-none invisible absolute left-1/2 top-full z-30 mt-1.5 w-64 -translate-x-1/2 whitespace-normal rounded-lg border border-maroon-400/50 bg-white/[0.06] p-3 text-xs font-normal leading-relaxed text-gray-600 opacity-0 shadow-[0_0_0_1px_rgba(255,46,67,0.08),0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-opacity duration-150 group-hover:visible group-hover:opacity-100 peer-focus-visible:visible peer-focus-visible:opacity-100 motion-reduce:transition-none"
+            className="pointer-events-none invisible absolute left-1/2 top-full z-30 mt-1.5 [tr:last-child_&]:bottom-full [tr:last-child_&]:top-auto [tr:last-child_&]:mb-1.5 [tr:last-child_&]:mt-0 w-64 -translate-x-1/2 whitespace-normal rounded-lg border border-maroon-400/50 bg-white/[0.06] p-3 text-xs font-normal leading-relaxed text-gray-600 opacity-0 shadow-[0_0_0_1px_rgba(255,46,67,0.08),0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-opacity duration-150 group-hover:visible group-hover:opacity-100 peer-focus-visible:visible peer-focus-visible:opacity-100 motion-reduce:transition-none"
           >
             {summary}
           </span>
@@ -85,7 +94,7 @@ export default async function CallLogsTable({
   }
 
   return (
-    <div className="mt-6 flow-root overflow-x-auto">
+    <div className="mt-6 flow-root overflow-x-auto md:overflow-visible">
       <div className="inline-block min-w-full align-middle">
         <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
           {/* Stacked cards below md — a six-column table is unreadable on a
@@ -102,6 +111,7 @@ export default async function CallLogsTable({
                       <CallerName
                         name={callerLabel(call)}
                         summary={call.summary}
+                        href={`/dashboard/call-logs/${call.id}`}
                       />
                     </div>
                     <p className="text-sm text-gray-500">{call.agent?.name}</p>
@@ -163,14 +173,20 @@ export default async function CallLogsTable({
                   key={call.id}
                   className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                 >
-                  <td className="whitespace-nowrap py-3 pl-12 pr-3">
+                  <td className="relative whitespace-nowrap py-3 pl-12 pr-3">
+                    {/* In the cell's empty left padding, so the name keeps its place. */}
+                    <PhoneIcon
+                      aria-hidden="true"
+                      className="absolute left-5 top-1/2 w-4 -translate-y-1/2 text-brand-red-lit"
+                    />
                     <div>
                       <CallerName
                         name={callerLabel(call)}
                         summary={call.summary}
+                        href={`/dashboard/call-logs/${call.id}`}
                       />
                       {call.summary && (
-                        <p className="max-w-[26ch] truncate text-xs text-gray-500">
+                        <p className="max-w-[26ch] truncate pb-1 pl-2 pt-2 text-xs text-gray-500">
                           {call.summary}
                         </p>
                       )}

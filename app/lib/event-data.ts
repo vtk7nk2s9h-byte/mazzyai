@@ -1,4 +1,8 @@
-import { callerLabel } from '@/app/lib/utils';
+import {
+  callerLabel,
+  formatCurrency,
+  formatDuration,
+} from '@/app/lib/utils';
 import { db } from '@/src/prisma/db';
 
 /** One line of the Live Events feed, from either a call or a meeting. */
@@ -14,7 +18,26 @@ export type LiveEvent = {
   live: boolean;
   /** Set when the feed spans organizations, so each event can name its own. */
   organization: string | null;
+  /** What the row's expander shows: label/value pairs, then long text blocks. */
+  fields: [label: string, value: string][];
+  blocks: { label: string; content: string }[];
 };
+
+/** "PAST_DUE" -> "Past due". */
+const sentence = (value: string) => {
+  const words = value.toLowerCase().replace(/_/g, ' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
+
+const when = (value: string) =>
+  new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+
+/** Drops the pairs that have no value, so an expander never shows empty rows. */
+const present = (pairs: [string, string | null | undefined][]) =>
+  pairs.filter((p): p is [string, string] => !!p[1]);
 
 const CALL_TITLES = {
   INBOUND: 'Call received',
@@ -44,6 +67,11 @@ export async function fetchLiveEvents(
       'callerName',
       'fromNumber',
       'summary',
+      'transcript',
+      'durationMs',
+      'costCents',
+      'sentiment',
+      'disconnectReason',
       'startedAt',
       'createdAt',
     )
@@ -55,7 +83,12 @@ export async function fetchLiveEvents(
       'id',
       'title',
       'attendeeName',
+      'description',
+      'location',
+      'status',
+      'allDay',
       'startsAt',
+      'endsAt',
       'createdAt',
     )
       .include('organization', (o) => o.select('name'))
@@ -100,6 +133,20 @@ export async function fetchLiveEvents(
           detail: c.summary ?? (c.agent ? `Handled by ${c.agent.name}` : null),
           live,
           organization: scoped ? null : (c.organization?.name ?? null),
+          fields: present([
+            ['Direction', sentence(c.direction)],
+            ['Status', sentence(c.status)],
+            ['Agent', c.agent?.name],
+            ['Started', when(c.startedAt ?? c.createdAt)],
+            ['Duration', c.durationMs != null ? formatDuration(c.durationMs) : null],
+            ['Cost', c.costCents != null ? formatCurrency(c.costCents) : null],
+            ['Sentiment', sentence(c.sentiment)],
+            ['Ended because', c.disconnectReason ? sentence(c.disconnectReason) : null],
+          ]),
+          blocks: [
+            ...(c.summary ? [{ label: 'Summary', content: c.summary }] : []),
+            ...(c.transcript ? [{ label: 'Transcript', content: c.transcript }] : []),
+          ],
         };
       }),
       ...meetingRows.map((m): LiveEvent => ({
@@ -108,12 +155,21 @@ export async function fetchLiveEvents(
         at: m.createdAt,
         title: 'Meeting set',
         subject: m.attendeeName ? `${m.title} · ${m.attendeeName}` : m.title,
-        detail: `For ${new Intl.DateTimeFormat('en-US', {
-          dateStyle: 'medium',
-          timeStyle: 'short',
-        }).format(new Date(m.startsAt))}`,
+        detail: `For ${when(m.startsAt)}`,
         live: false,
         organization: scoped ? null : (m.organization?.name ?? null),
+        fields: present([
+          ['Meeting', m.title],
+          ['Attendee', m.attendeeName],
+          ['Location', m.location],
+          ['Starts', m.allDay ? null : when(m.startsAt)],
+          ['Ends', m.allDay ? null : when(m.endsAt)],
+          ['Status', sentence(m.status)],
+          ['Set on', when(m.createdAt)],
+        ]),
+        blocks: m.description
+          ? [{ label: 'Description', content: m.description }]
+          : [],
       })),
       ...emailRows.map((a): LiveEvent => {
         const diff = (a.diff ?? {}) as { to?: string; subject?: string };
@@ -126,6 +182,12 @@ export async function fetchLiveEvents(
           detail: diff.subject ?? null,
           live: false,
           organization: scoped ? null : (a.organization?.name ?? null),
+          fields: present([
+            ['To', diff.to],
+            ['Subject', diff.subject],
+            ['Sent', when(a.createdAt)],
+          ]),
+          blocks: [],
         };
       }),
     ];

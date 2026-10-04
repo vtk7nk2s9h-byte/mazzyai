@@ -77,6 +77,15 @@ export function InvoiceStatusBadge({ status }: { status: string }) {
   );
 }
 
+/** Whether a follow-up email went out: green when sent, grey when not. */
+export function EmailSentBadge({ sent }: { sent: boolean }) {
+  return (
+    <span className={clsx(pill, sent ? tone.good : tone.neutral)}>
+      {sent ? 'Sent' : 'Not sent'}
+    </span>
+  );
+}
+
 /** IDLE / READY / ACTIVE / PAUSED / DISACTIVATED. */
 export function AgentStatusBadge({ status }: { status: string }) {
   return (
@@ -115,6 +124,15 @@ export function AgentStatusDot({ status }: { status: string }) {
         'bg-gray-400/60': !['ACTIVE', 'PAUSED', 'DISACTIVATED'].includes(status),
       })}
     />
+  );
+}
+
+/** Which agent an asset applies to: a brand badge for one, neutral for all. */
+export function AssignmentBadge({ name }: { name: string | null }) {
+  return (
+    <span className={clsx(pill, name ? tone.brand : tone.neutral)}>
+      {name ?? 'All agents'}
+    </span>
   );
 }
 

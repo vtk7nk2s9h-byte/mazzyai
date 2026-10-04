@@ -1,5 +1,11 @@
-import { fetchKnowledge, syncKnowledgeStatus } from '@/app/lib/agent-data';
+import {
+  fetchKnowledge,
+  fetchOrgAgentOptions,
+  syncKnowledgeStatus,
+} from '@/app/lib/agent-data';
 import { formatDateToLocal } from '@/app/lib/utils';
+import KnowledgeAgentEdit from '@/app/ui/agents/knowledge-agent-edit';
+import KnowledgeDelete from '@/app/ui/agents/knowledge-delete';
 import { label } from '@/app/ui/organizations/status';
 
 const kindLabel = { TEXT: 'Text', URL: 'URL', FILE: 'File' } as const;
@@ -21,7 +27,10 @@ export default async function KnowledgeList({
 }: {
   organizationId: string;
 }) {
-  let docs = await fetchKnowledge(organizationId);
+  let [docs, agents] = await Promise.all([
+    fetchKnowledge(organizationId),
+    fetchOrgAgentOptions(organizationId),
+  ]);
   if (await syncKnowledgeStatus(docs).catch(() => false)) {
     docs = await fetchKnowledge(organizationId);
   }
@@ -41,8 +50,9 @@ export default async function KnowledgeList({
           <table className="min-w-full text-sm text-gray-900">
             <thead className="text-left font-normal">
               <tr>
-                <th className="px-4 py-4 font-medium">Resource</th>
+                <th className="px-4 py-4 font-medium">Name</th>
                 <th className="px-3 py-4 font-medium">Type</th>
+                <th className="px-3 py-4 font-medium">Agent</th>
                 <th className="px-3 py-4 font-medium">Status</th>
                 <th className="px-3 py-4 font-medium">Added</th>
               </tr>
@@ -65,10 +75,29 @@ export default async function KnowledgeList({
                     {kindLabel[d.sourceType as keyof typeof kindLabel]}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
-                    {label(d.status)}
+                    <KnowledgeAgentEdit
+                      documentId={d.id}
+                      title={d.title}
+                      agentId={d.agentId}
+                      agents={agents}
+                    />
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
-                    {formatDateToLocal(d.createdAt)}
+                    {label(d.status)}
+                    {d.errorMessage && (
+                      <p
+                        title={d.errorMessage}
+                        className="max-w-[28ch] truncate text-xs text-gray-500"
+                      >
+                        {d.errorMessage}
+                      </p>
+                    )}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-3">
+                    <span className="inline-flex items-center gap-3">
+                      {formatDateToLocal(d.createdAt)}
+                      <KnowledgeDelete documentId={d.id} title={d.title} />
+                    </span>
                   </td>
                 </tr>
               ))}

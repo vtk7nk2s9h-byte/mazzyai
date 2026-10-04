@@ -28,6 +28,7 @@ export default function BadgeSelect({
   ariaLabel,
   badge,
   format = label,
+  openUp = false,
   save,
 }: {
   value: string;
@@ -39,6 +40,8 @@ export default function BadgeSelect({
   badge: ReactNode;
   /** How an option reads in the list and the toasts; sentence case by default. */
   format?: (value: string) => string;
+  /** Always open the list upward — for a picker that isn't in a table row but sits near the page bottom. */
+  openUp?: boolean;
   save: (next: string) => Promise<SaveResult>;
 }) {
   const details = useRef<HTMLDetailsElement>(null);
@@ -108,7 +111,12 @@ export default function BadgeSelect({
           edge. */}
       <ul
         role="listbox"
-        className="absolute right-0 z-20 mt-2 max-h-56 [tr:last-child_&]:bottom-full [tr:last-child_&]:mb-2 [tr:last-child_&]:mt-0 w-44 overflow-y-auto rounded-lg border border-white/[0.07] bg-white/[0.05] p-1 shadow-xl backdrop-blur-xl"
+        className={clsx(
+          'absolute right-0 z-20 max-h-56 w-44 overflow-y-auto rounded-lg border border-white/[0.07] bg-white/[0.05] p-1 shadow-xl backdrop-blur-xl',
+          openUp
+            ? 'bottom-full mb-2'
+            : 'mt-2 [tr:last-child_&]:bottom-full [tr:last-child_&]:mb-2 [tr:last-child_&]:mt-0',
+        )}
       >
         {options.map((option) => (
           <li key={option} role="option" aria-selected={option === value}>

@@ -139,6 +139,15 @@ enum TranscriptRole {
   SYSTEM = "SYSTEM"
 }
 
+// What kind of email the system sent. Recorded in the AuditLog diff of an
+// "email.sent" row for now (see follow-up-email.ts); no table uses it yet.
+enum EmailType {
+  @@type("pg/text@1")
+  MARKETING  = "MARKETING"
+  INVITATION = "INVITATION"
+  FOLLOW_UP  = "FOLLOW_UP" // after a call
+}
+
 enum DemoLeadStatus {
   @@type("pg/text@1")
   NEW       = "NEW"
@@ -161,7 +170,7 @@ enum SubscriptionStatus {
 enum MeetingStatus {
   @@type("pg/text@1")
   SCHEDULED = "SCHEDULED"
-  COMPLETED = "FINISHED"
+  COMPLETED = "COMPLETED"
   CANCELLED = "CANCELLED"
 }
 
@@ -334,6 +343,7 @@ model Organization {
   subscription        Subscription?
   invoices            Invoice[]
   meetings            Meeting[]
+  paymentMethods      PaymentMethod[]
   apiKeys             ApiKey[]
   integrations        Integration[]
   featureFlagOverride FeatureFlag[]
@@ -449,6 +459,7 @@ model Agent {
   phoneNumbers       PhoneNumber[]
   calls              Call[]
   knowledgeDocuments KnowledgeDocument[]
+  meetings           Meeting[]
 
   @@index([organizationId, status])
 }
@@ -715,6 +726,25 @@ model Subscription {
   updatedAt                 temporal.updatedAtString()
 }
 
+// A card as the billing UI shows it: brand, last four and expiry only. Never a
+// full number or CVC — a processor token would be the real source of these.
+model PaymentMethod {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  brand          String
+  last4          String
+  expMonth       Int
+  expYear        Int
+  holderName     String
+  billingAddress String?
+  isDefault      Boolean           @default(false)
+  createdAt      TimestamptzString @default(now())
+  updatedAt      temporal.updatedAtString()
+
+  @@index([organizationId])
+}
+
 model Invoice {
   id              String        @id @default(uuid())
   organizationId  String
@@ -742,6 +772,9 @@ model Meeting {
   description    String?
   attendeeName   String?
   location       String?
+  // The agent that booked it; NULL for an event added by hand.
+  agentId        String?
+  agent          Agent?            @relation(fields: [agentId], references: [id], onDelete: SetNull)
   startsAt       TimestamptzString
   endsAt         TimestamptzString
   allDay         Boolean           @default(false)
@@ -750,6 +783,7 @@ model Meeting {
   updatedAt      temporal.updatedAtString()
 
   @@index([organizationId, startsAt])
+  @@index([agentId])
 }
 
 // =============================================================================

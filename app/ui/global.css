@@ -286,9 +286,70 @@ input[type='number']::-webkit-outer-spin-button {
   margin: 0;
 }
 
+/* A light sweep across text, for things in progress. Used by the Attachment
+   title while a file uploads. */
+@layer utilities {
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      currentColor 0%,
+      currentColor 35%,
+      rgba(255, 255, 255, 0.45) 50%,
+      currentColor 65%,
+      currentColor 100%
+    );
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer-sweep 1.6s linear infinite;
+  }
+  @keyframes shimmer-sweep {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shimmer {
+      animation: none;
+    }
+  }
+}
+
 /* reCAPTCHA v3 floats its badge in the bottom-right corner, which is where the
    voice widget lives. Google permits hiding it only if the attribution it
    carries is shown instead — the widget panel prints that line. */
 .grecaptcha-badge {
   visibility: hidden;
+}
+
+/* Recharts' SVG surface and its slices/bars take focus when clicked, and the
+   browser draws a white outline around them. */
+.recharts-wrapper,
+.recharts-wrapper *:focus,
+.recharts-wrapper *:focus-visible {
+  outline: none;
+}
+
+/* A new Live Events row sliding in from the left. Plays when the element is
+   created, so the feed's 5-second refresh only animates rows new to the list.
+   Lives here rather than in tailwind.config.ts: the dev server reads that
+   config once at startup, so edits to it need a restart. */
+@keyframes live-row-in {
+  from {
+    opacity: 0;
+    transform: translateX(-2.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .live-row-in {
+    animation: live-row-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
 }

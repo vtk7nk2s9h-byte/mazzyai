@@ -1,7 +1,6 @@
-import { checkRetell, lastWebhookAt } from '@/app/lib/retell-health';
-import { ago } from '@/app/ui/live-events/feed';
-
-const DAY_MS = 86_400_000;
+import { checkRetell, checkTunnel } from '@/app/lib/retell-health';
+import { ownedTunnel } from '@/app/lib/tunnel-process';
+import TunnelButton from '@/app/ui/live-events/tunnel-button';
 
 /** A glowing dot, same recipe as the agent status dot: green, red or dim. */
 function Dot({ tone }: { tone: 'good' | 'bad' | 'dim' }) {
@@ -23,40 +22,43 @@ function Item({
   tone,
   name,
   value,
+  children,
 }: {
   tone: 'good' | 'bad' | 'dim';
   name: string;
   value: string;
+  children?: React.ReactNode;
 }) {
   return (
     <li className="flex items-center gap-2">
       <Dot tone={tone} />
       <span className="text-gray-500">{name}</span>
       <span className="text-gray-900">{value}</span>
+      {children}
     </li>
   );
 }
 
 /**
  * The two links a call depends on. "API" is a live test from here to Retell.
- * "Webhook" can't be tested from here — Retell has to reach us — so it reports
- * the last delivery instead; having none in a day is shown dim, not red,
- * because a quiet account looks the same as a broken webhook.
+ * "Tunnel" is whether a public tunnel is carrying Retell's webhooks to this dev
+ * server; no tunnel is shown dim, not red, because outside testing it is the
+ * normal state.
  *
- * The webhook line is for superusers: the log is global, so it says nothing
- * specific to one organization.
+ * The tunnel line is for superusers: it describes this machine, which an
+ * organization admin has no business with. In development it also carries the
+ * button that starts the tunnel, or stops one this server started; a tunnel
+ * opened from a terminal is shown but left alone.
  */
 export default async function ConnectionStatus({
-  showWebhook,
+  showTunnel,
 }: {
-  showWebhook: boolean;
+  showTunnel: boolean;
 }) {
-  const [health, webhookAt] = await Promise.all([
+  const [health, tunnel] = await Promise.all([
     checkRetell(),
-    showWebhook ? lastWebhookAt() : null,
+    showTunnel ? checkTunnel() : null,
   ]);
-
-  const fresh = webhookAt && Date.now() - Date.parse(webhookAt) < DAY_MS;
 
   return (
     <ul className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-1 text-xs">
@@ -69,16 +71,21 @@ export default async function ConnectionStatus({
             : health.message
         }
       />
-      {showWebhook && (
+      {tunnel && (
         <Item
-          tone={fresh ? 'good' : 'dim'}
-          name="Webhook"
-          value={
-            webhookAt
-              ? `Last event ${ago(webhookAt)}`
-              : 'No events received yet'
+          tone={
+            tunnel.state === 'up' ? 'good' : tunnel.state === 'down' ? 'bad' : 'dim'
           }
-        />
+          name="Tunnel"
+          value={tunnel.host ? `${tunnel.message} · ${tunnel.host}` : tunnel.message}
+        >
+          {process.env.NODE_ENV !== 'production' &&
+            (tunnel.state === 'none' ? (
+              <TunnelButton mode="start" />
+            ) : ownedTunnel() ? (
+              <TunnelButton mode="stop" />
+            ) : null)}
+        </Item>
       )}
     </ul>
   );

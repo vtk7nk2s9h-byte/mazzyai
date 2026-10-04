@@ -7,12 +7,15 @@ import {
   renderEmail,
   sendEmail,
 } from '@/app/lib/email';
+import type { EmailType } from '@/app/lib/utils';
 import { db } from '@/src/prisma/db';
 
 // Server-side only: imports the mailer and the Prisma client.
 
 const DAY_MS = 86_400_000;
 const SUBJECT = 'Thanks for talking with MazzyAI';
+/** Recorded with each send, for the call profile. */
+const EMAIL_TYPE: EmailType = 'FOLLOW_UP';
 
 const EmailSchema = z.string().trim().toLowerCase().email().max(254);
 
@@ -134,6 +137,6 @@ ${sections
     action: 'email.sent',
     targetType: 'call',
     targetId: call.call_id,
-    diff: { to, subject: SUBJECT },
+    diff: { to, subject: SUBJECT, type: EMAIL_TYPE },
   });
 }

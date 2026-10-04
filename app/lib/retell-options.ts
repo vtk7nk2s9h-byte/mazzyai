@@ -71,6 +71,16 @@ export const VOICE_TEMPERATURE_RANGE = { min: 0, max: 2, step: 0.05 } as const;
 export const VOICE_VOLUME_RANGE = { min: 0, max: 2, step: 0.05 } as const;
 export const INTERRUPTION_RANGE = { min: 0, max: 1, step: 0.05 } as const;
 
+// Background sounds Retell can play under the call (update-agent docs).
+export const AMBIENT_SOUNDS = [
+  'coffee-shop',
+  'convention-hall',
+  'summer-outdoor',
+  'mountain-outdoor',
+  'static-noise',
+  'call-center',
+] as const;
+
 // "custom" is left out: it needs a provider and endpointing config of its own.
 export const STT_MODES = ['fast', 'accurate'] as const;
 
