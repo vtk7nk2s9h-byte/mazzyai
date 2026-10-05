@@ -2,13 +2,17 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import COASTLINES from "./scroll-globe-coastlines.json";
+import LAND from "./scroll-globe-land.json";
+import SectionHeading from "@/components/ui/section-heading";
+import UseCaseExplorer from "@/components/ui/use-case-explorer";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                               */
 /* ------------------------------------------------------------------ */
 
-// 360 x 180 land/sea bitmap (1° cells, row 0 = 90°N, col 0 = 180°W), base64.
-const LAND_MASK = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP//8AFb///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA///+x/////76fAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/gD/p////////AAAAAAAAAACxBwAAAAHgAAAAAAAAAAAAAAAAAAAAAAAAAAA///uAf//////+AAAABrvwAAAAAAAAAAH8AAAAAAAAAAAAAAAAAAAAAAAAeHznn/h////////4AAAABXsAAAAAAAAAAAAD4AAAAAAAAAAAAAAAAAAAAAAEcIA5MfAI///////8AAAAAPFAAAAAAAAAAAAAcAAAAAAAAAAAAAAAAAAAAABoCGc8X/AH///////4AAAAAAAAAAAAAB4AAAAB9+AAAAAAAAAAAAAAAAAAAAAD/wMzz8AAAP/////2AAAAAAAAAAAAD4AAAA////AAAB/oAAAAAAAAAAAAAACAwACAcAAAAP/////+AAAAAAAAAAAAMAAAAX///6AAAAAAAAAAAAAAAAAAAAP+Ac8+M/gAAD////+8AAAAAAAAAAAA4AAAH///+O+HAAHAAAAAAAAAAAAAAAf/+4/Y/94AAD////+wAAAAAAAAAAABwAHhH///////8AHwAAAAAwAAAAAAAAON/8E4//9AADf////gAAAAAAAAAAABwAPZ+///////4nv/gAAAAAAAH8gAAAAAP+A8f//8AA3///ogAAAAAABtgAAAAAfv/////////////8AAAAAB///+B/2H/+DnDxf8AAz////AAAAAAA//wAAAA8Pv//////////////9H8wAP////////QsDPzwD8AAf///wAAAAAAG///wIBe/3+/////////////////+AD////////+//fz4Y/wA7//4AAAAAAAD///+I////v//////////////////4EP///////////5gD/8A///gAAAAAAAf//5+P///8//////////////////7w/////////////qAD+QAP/wABr8AAAAf8f+D///////////////////////AwAf///////////zwx/AAP/wAAP8AAAB/4/+f//////////////////////4AMAf//////////+DBAbwAH/AAADAAAAN/j/////////////////////////+AAH///////////4AwgHQAD/AAAAAAAAf/H///////////////////////n/6AAP///////////wAA/AAAB+AAAAAAAB/+H//////////////////////jP+AAAH/9z////////gAA/wAAAMAAAAAACB//D7////////////////////+A/YAAAA/xAD///////gAA/wQAAAAAAAAAAB9/Ab///////////////////+ODgAAAAAB0AAX//////4AA/94AAAAAAAAAYA5+C///////////////////4AAHQAAAAABcAAP//////8AAf/+AAAAAAAAB8AA+i///////////////////wAAfgAAAAAMAAAC///////wAf/+AAAAAAAAAYAOeH///////////////////AAA/gAAAABQAAADf//////8Af//AAAAAAAAAcAPQH//////////////////8AAA/AAAAAEAAAAAP///////z///4AAAAAAADuAEDv//////////////////+AAA+AAAAAAAAAABP///////x///8AAAAAAAPHAf/////////////////////4AA8AAAAAAAAAAAn///////x///8AAAAAAAPPx//////////////////////6AA4AAAAAAAAAAAD///////////6AAAAAAAAPH//////////////////////6AAwAAAAAAAAAAAC///////////kAAAAAAAAQP//////////////////////zAAAAAAAAAAAAAABv////////+MMAAAAAAAAC///////////////////////7AAAAAAAAAAAAAAAL////////7wPgAAAAAAAf///////////////////////yAAAAAAAAAAAAAAAP/////////gCgAAAAAAAD///////////////////////iAAAAAAAAAAAAAAAP/////////pAAAAAAAAAD/////vP////////////////BAAAAAAAAAAAAAAAP/////////+AAAAAAAAAB//v//GP///////////////+AAAAAAAAAAAAAAAAP////////8wAAAAAAAAAB//P/+EP///////////////8CAAAAAAAAAAAAAAAP////////wgAAAAAAAADj/jz/+AD///////////////4HgAAAAAAAAAAAAAAP////////gAAAAAAAAAH/4Fw/4AA//////////////+ACAAAAAAAAAAAAAAAP////////gAAAAAAAAAH/wAcP8PA//////////////8AAAAAAAAAAAAAAAAAP///////8AAAAAAAAAAH/gMHfV///////////////v4AMAAAAAAAAAAAAAAAP///////8AAAAAAAAAAH/IMCOH//////////////+ZwAMAAAAAAAAAAAAAAAH///////oAAAAAAAQAAH/AACGP//////////////8BwAMAAAAAAAAAAAAAAAH///////wAAAAAAAAAAH+AAYDH//////////////+g4AYAAAAAAAAAAAAAAAD///////wAAAAAAAAAAAgf+AABs//////////////g4D4AAAAAAAAAAAAAAAB///////wAAAAAAAAAAAh/+AAAA//////////////A4fwAAAAAAAAAAAAAAAB///////gAAAAAAAAAAB//8AAAA//////////////Ah2AAAAAAAAAAAAAAAAAP/////+AAAAAAAAAAAD//+AAAB//////////////gjwAAAAAAAAAAAAAAAAAAH/////4AAAAAAAAAAQH///4GAB//////////////gBAAAAAAAAAAAAAAAAAAG/////4AAAAAAAAAAAP///8PwD//////////////gCAAAAAAAAAAAAAAAAAACf////4AAAAAAAAAAAP////v////////////////gAAAAAAAAAAAAAAAAAAABv//xAYAAAAAAAAAAAP//////3//H///////////gAAAAAAAAAAAAAAAAAAAAv//AAYAAAAAAAAAAAf/////////H///////////wAAAAAAAAAAAAAAAAAAAB3/+AAcAAAAAAAAAAB///////8//h///////////gAAAAAAAAAAAAAAAAAAAAZ/+AAMAAAAAAAAAAD///////8//wH//////////AAAAAAAAAAAAAAAAAAAAAJ/+AAEAAAAAAAAAAH///////+f/wB/f////////AAAAAAAAAAAAAAAAAAAAAI/8AAAAAAAAAAAAAH///////+f/44Af///////8QAAAAAAAAAAAAAAAAAAAACf8AAAAAAAAAAAAAP///////+H//+AP///////4gAAAAAAAAAAAAAAAAAAAAAP8AAvAAAAAAAAAAP////////H///AD///////ggAAAAAAAAAAAAAAAAAAAAAH8AQBggAAAAAAAAf////////n//+ADf/4P//YAAAAAAAAAAAAAAAAAAAAAAAH+A4AYAAAAAAAAAP////////j//+AAf/4H/+IAAAAAAAAAAAAAAAgAAAAAAAH/B4ABwAAAAAAAAP////////h//8AAf/gD/8YAAAAAAAAAAAAAAAAAAAAAAAD/lwAD8AAAAAAAAP////////x//4AAf/AD/8QAAAAAAAAAAAAAAAAAAAAAAAAf/wAAAAAAAAAAAP////////4//gAAf+AB/+AAwAAAAAAAAAAAAAAAAAAAAAAH/wAAAAAAAAAAAP////////4f+AAAf8AD//AAwAAAAAAAAAAAAAAAAAAAAAAAH/AAAAAAAAAAAf////////8/8AAAPwAAP/gAgAAAAAAAAAAAAAAAAAAAAAAAD/gAAAAAAAAAAf////////+fgAAAPwAAP/gAwAAAAAAAAAAAAAAAAAAAAAAAA/AAAAAAAAAAAf/////////eAAAAHwAAP/gAsAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAf/////////gBAAAHwAAM/gAKAAAAAAAAAAAAAAAAAAAAAAAADABIAAAAAAAAH/////////gIAAADwAAEfgALAAAAAAAAAAAAAAAAAAAAAAAADgPfIAAAAAAAH/////////34AAADwAAIPABIAAAAAAAAAAAAAAAAAAAAAAAAAyPf+AAAAAAAD//////////4AAADoAAIEACBAAAAAAAAAAAAAAAAAAAAAAAAA8///AAAAAAAB//////////wAAABIAAMAAEHAAAAAAAAAAAAAAAAAAAAAAAAAE///gAAAAAAB//////////wAAAAMAAEAAADgIAAAAAAAAAAAAAAAAAAAAAAAAf//wAAAAAAAf/////////gAAAAMAADAAMDAAAAAAAAAAAAAAAAAAAAAAAAAA////gAAAAAAP/B///////gAAAAAABDgAeAAAAAAAAAAAAAAAAAAAAAAAAAAAf///wAAAAAACAA3//////AAAAAAAAxgA+AAAAAAAAAAAAAAAAAAAAAAAAAAAf///4AAAAAAAAAD/////+AAAAAAAAZgB8BAAAAAAAAAAAAAAAAAAAAAAAAAB////4AAAAAAAAAD/////8AAAAAAAAMwH8AIAAAAAAAAAAAAAAAAAAAAAAAAB////8AAAAAAAAAD/////wAAAAAAAAHQf8AIAAAAAAAAAAAAAAAAAAAAAAAAD////4AAAAAAAAAH/////gAAAAAAAAHgf8cIAAAAAAAAAAAAAAAAAAAAAAAAD/////AAAAAAAAAH/////AAAAAAAAAD4f8ASgAAAAAAAAAAAAAAAAAAAAAAAH////+4AAAAAAAAH/////AAAAAAAAABwP50QwAAAAAAAAAAAAAAAAAAAAAAAH/////+AAAAAAAAD////+AAAAAAAAAB8P5wAL4AgAAAAAAAAAAAAAAAAAAAAD//////4AAAAAAAB////8AAAAAAAAAA8AxQif/AAAAAAAAAAAAAAAAAAAAAAH//////8AAAAAAAA////4AAAAAAAAAAcAAQAD/gAAAAAAAAAAAAAAAAAAAAAH///////gAAAAAAA////4AAAAAAAAAAMABAAI/ywAAAAAAAAAAAAAAAAAAAAD///////gAAAAAAA////4AAAAAAAAAADgAAAIf8BAAAAAAAAAAAAAAAAAAAAD///////gAAAAAAAf///4AAAAAAAAAAB+AABA/4AAAAAAAAAAAAAAAAAAAAAB///////gAAAAAAAf///4AAAAAAAAAAAAfsgAOMAAAAAAAAAAAAAAAAAAAAAA///////AAAAAAAAf///8AAAAAAAAAAAABCAAAGgAAAAAAAAAAAAAAAAAAAAA///////AAAAAAAAP///+AAAAAAAAAAAAAAAAAAgBAAAAAAAAAAAAAAAAAAAAf/////+AAAAAAAAP///8AAAAAAAAAAAAAACgCAEAAAAAAAAAAAAAAAAAAAAAf/////8AAAAAAAAf///8AQAAAAAAAAAAAAB+CAAAAAAAQAAAAAAAAAAAAAAAP/////4AAAAAAAAf///+AQAAAAAAAAAAAAD8DAAAAAAAAAAAAAAAAAAAAAAAP/////4AAAAAAAA////+AwAAAAAAAAAAAA38DgAAAAAAAAAAAAAAAAAAAAAAH/////4AAAAAAAA////+BwAAAAAAAAAAAD/8HgAAAAAAAAAAAAAAAAAAAAAAB/////4AAAAAAAA////8PwAAAAAAAAAAAH//XgAABABAAAAAgAAAAAAAAAAAAf////4AAAAAAAA////wPgAAAAAAAAAAAP//3wAAAAAAAAAAAAAAAAAAAAAAAP////wAAAAAAAA////gPgAAAAAAAAAAAP///wAAAAAAAAAAAAAAAAAAAAAAAP////wAAAAAAAAf//+APgAAAAAAAAAAAf///8AAAAAAAAAAAAAAAAAAAAAAAP////wAAAAAAAAf//+APgEAAAAAAAAAD////+AAIAAAAAAAAAIAAAAAAAAAAP////gAAAAAAAAP//+AfAAAAAAAAAAAf////+AAEAAAAAAAAAAAAAAAAAAAAP////AAAAAAAAAP///AfAAAAAAAAAAA//////AAAAAAAAAAAAAAAAAAAAAAAP///4AAAAAAAAAP//+APAAAAAAAAAAA//////gAAAAAAAAAAAAAAAAAAAAAAf///gAAAAAAAAAH//+AOAAAAAAAAAAB//////wAAAAAAAAAAAAAAAAAAAAAAf//+AAAAAAAAAAH//4AEAAAAAAAAAAA//////4AAAAAAAAAAAAAAAAAAAAAAf//+AAAAAAAAAAH//4AAAAAAAAAAAAB//////4AAAAAAAAAAAAAAAAAAAAAAf///AAAAAAAAAAH//4AAAAAAAAAAAAA//////8AAAAAAAAAAAAAAAAAAAAAAf//+AAAAAAAAAAD//wAAAAAAAAAAAAAf/////8AAAAAAAAAAAAAAAAAAAAAAf//8AAAAAAAAAAB//gAAAAAAAAAAAAAf/////4AAAAAAAAAAAAAAAAAAAAAA///8AAAAAAAAAAB//gAAAAAAAAAAAAAf/////4AAAAAAAAAAAAAAAAAAAAAA///wAAAAAAAAAAA//AAAAAAAAAAAAAAP/////4AAAAAAAAAAAAAAAAAAAAAAf//wAAAAAAAAAAA/+AAAAAAAAAAAAAAP/AP//wAAAAAAAAAAAAAAAAAAAAAA//vgAAAAAAAAAAA/4AAAAAAAAAAAAAAP8AG//gAAAAAAAAAAAAAAAAAAAAAA//3AAAAAAAAAAAAQAAAAAAAAAAAAAAAOAAF//gAAAAAAAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//AAABAAAAAAAAAAAAAAAAAAB//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAAgAAAAAAAAAAAAAAAAAD//4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AAAAQAAAAAAAAAAAAAAAAAD//wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABYAAAAcAAAAAAAAAAAAAAAAAB/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAD/8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAD/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAADQAAAAAAAAAAAAAAAAAD/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAcAAAHAAAAAAAAAAAAAAAAAAB/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAOAAAAAAAAAAAAAAAAAAF/gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAAAAAH+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4AAAAAAAAAAAAAAAAAAH+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAD/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP8AAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAH4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4AwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/AAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAAAP4AAAAAAL+HgBj/AAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAAAAAAAADf/gAAB//////////AAAAAAAAAAAAAAAAAAAAAAAABoAAAAAAAAAAAAAAAAB////8A////////////mAAAAAAAAAAAAAAAAAAAAAB38AAAAAAAAAAAAAAAGD////4D/////////////4AAAAAAAAAAAAAAAAAAAAAb+AAAAAAAAAAAM/gB//////4//////////////+gAAAAAAAAAAAAAAAAAAAD/8AAAAAAAA7+///////////5////////////////4AAAAAAAAAAAAAAHQABh5+AAAAAAAA//////////////////////////////gAAAAAAAAABgAAAP/+Gl/8AAAAAAAf/////////////////////////////+AAAAAAAAAAiARsAv/////+AAAAAAA//////////////////////////////sAAAAAAAAX////////////wAAAAAAF//////////////////////////////gAAAAAAAX///////////PwAAAAAAf///////////////////////////////gAAAAAD+P///////////8AAAAAAP////////////////////////////////zgAAAAAP///////////fgCAAD8A/////////////////////////////////+AAAAD4B///////////7wwAAD+AB///////////////////////////////+AAAAAAAA////////////wAAA/wAH///////////////////////////////+AAAAAAAP//////////////AAAA/////////////////////////////////+AAAAAAAH//////////////4D/n//////////////////////////////////8AAAAAH//////////////////////////////////////////////////////8A/wAP////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
+// The land/sea bitmap the dots are drawn from lives in scroll-globe-land.json,
+// built from Natural Earth polygons by scripts/build-land-mask.mjs.
 
 export const DEFAULT_AIRPORTS = {
   JFK: { name: "New York", lat: 40.64, lon: -73.78 },
@@ -42,30 +46,36 @@ export const DEFAULT_AIRPORTS = {
 // scrolls, on the same timing curve the arcs use, so copy and globe advance
 // together. Point count is independent of route count — slide 5 has no arcs.
 export const DEFAULT_CHAPTERS = [
-  {
-    title: "What is an AI Voice Agent",
-    body: "",
-    focus: { lat: 45, lon: -40 },
-    distance: 3.9,
-    routes: [["JFK", "LHR"], ["ORD", "FRA"], ["LAX", "LHR"], ["IST", "JFK"], ["MAD", "JFK"], ["CDG", "JFK"], ["YYZ", "LHR"]],
-    points: [
-      "A trained AI voice agent that answers your line 24/7. No shifts, no breaks, no hold queue.",
-      "Built on your own hours, location, services and policies. thus, never a generic script.",
-      "Speaks naturally and answers the moment a call arrives.",
-      "Runs on your existing number. No hiring, no training, no turnover.",
-    ],
-  },
+  // The old first chapter, kept for later. The intro
+  // (components/ui/intro-hero.tsx) opens the page now, and "Why Hire" follows
+  // it directly. To bring this back, uncomment the whole object; it was the
+  // stop that turned the globe to the Atlantic routes.
+  //
+  // {
+  //   title: "What is an AI Voice Agent",
+  //   body: "",
+  //   focus: { lat: 45, lon: -40 },
+  //   distance: 3.9,
+  //   routes: [["JFK", "LHR"], ["ORD", "FRA"], ["LAX", "LHR"], ["IST", "JFK"], ["MAD", "JFK"], ["CDG", "JFK"], ["YYZ", "LHR"], ["FRA", "JFK"], ["ORD", "CDG"], ["YYZ", "FRA"], ["LAX", "CDG"], ["IST", "ORD"], ["MAD", "YYZ"], ["LHR", "ORD"]],
+  //   points: [
+  //     "A trained AI voice agent that answers your line 24/7. No shifts, no breaks, no hold queue.",
+  //     "Built on your own hours, location, services and policies. thus, never a generic script.",
+  //     "Speaks naturally and answers the moment a call arrives.",
+  //     "Runs on your existing number. No hiring, no training, no turnover.",
+  //   ],
+  // },
   {
     title: "Why Hire an AI Voice Agent",
     body: "",
     focus: { lat: 22, lon: 48 },
     distance: 3.8,
-    routes: [["LHR", "DXB"], ["DXB", "BOM"], ["DXB", "JNB"], ["DXB", "SIN"], ["DXB", "HKG"], ["CAI", "DXB"]],
+    routes: [["LHR", "DXB"], ["DXB", "BOM"], ["DXB", "JNB"], ["DXB", "SIN"], ["DXB", "HKG"], ["CAI", "DXB"], ["FRA", "DXB"], ["IST", "DXB"], ["DXB", "ICN"], ["BOM", "SIN"], ["CAI", "JNB"], ["DXB", "HND"]],
     points: [
       "Every unanswered call is a customer who called your competitor next.",
       "Staff stop losing hours to the same five questions.",
       "Covers nights, weekends and holidays - when most calls go unanswered.",
-      "It scales along side your business, as a result, busier season, more locations, more calls, same reliability.",
+      // Kept for later: each chapter is down to three points.
+      // "It scales along side your business, as a result, busier season, more locations, more calls, same reliability.",
     ],
   },
   {
@@ -73,12 +83,13 @@ export const DEFAULT_CHAPTERS = [
     body: "",
     focus: { lat: 18, lon: 135 },
     distance: 4.1,
-    routes: [["SIN", "HKG"], ["HKG", "HND"], ["SIN", "SYD"], ["HND", "LAX"], ["HND", "SYD"], ["ICN", "SIN"]],
+    routes: [["SIN", "HKG"], ["HKG", "HND"], ["SIN", "SYD"], ["HND", "LAX"], ["HND", "SYD"], ["ICN", "SIN"], ["ICN", "HND"], ["HKG", "SYD"], ["SIN", "PER"], ["ICN", "LAX"], ["HKG", "ICN"], ["HND", "SIN"]],
     points: [
       "Missed calls that become missed bookings, orders and patients.",
       "Staff interrupted by repetitive questions instead of serving the customer present.",
       "No coverage after hours, and slow response when every line is busy.",
-      "Inconsistent answers, and the cost of staffing a desk just to cover the phone.",
+      // Kept for later: each chapter is down to three points.
+      // "Inconsistent answers, and the cost of staffing a desk just to cover the phone.",
     ],
   },
   {
@@ -86,27 +97,34 @@ export const DEFAULT_CHAPTERS = [
     body: "",
     focus: { lat: -24, lon: 12 },
     distance: 4.4,
-    routes: [["GRU", "JNB"], ["JNB", "PER"], ["EZE", "MAD"], ["SCL", "GRU"], ["SCL", "SYD"], ["AKL", "SYD"]],
+    routes: [["GRU", "JNB"], ["JNB", "PER"], ["EZE", "MAD"], ["SCL", "GRU"], ["SCL", "SYD"], ["AKL", "SYD"], ["EZE", "GRU"], ["GRU", "MAD"], ["JNB", "SYD"], ["PER", "SYD"], ["SCL", "AKL"], ["EZE", "SCL"]],
     points: [
       "Trained on your own details: name, location, hours and services.",
       "Adapts to your sector — reservations, appointments or intake requests.",
       "Speaks in your brand's tone and stays strictly within the facts you provide.",
-      "Update its knowledge the moment your details change.",
+      // Kept for later: each chapter is down to three points.
+      // "Update its knowledge the moment your details change.",
     ],
   },
   {
-    title: "Ask for a Free Demo Now!",
+    heading: (
+      <SectionHeading
+        title="Use cases"
+        eyebrow="Who it is for"
+        className="-ml-8 mb-8 items-start text-left"
+      />
+    ),
+    title: "Explore different use cases tailored to your business.",
     body: "",
     focus: { lat: 22, lon: 20 },
     distance: 5.1,
     routes: [],
     overview: true,
-    points: [
-      "See it run on your own business details, not a demo script.",
-      "Set up in under a minute — a few details and your agent is live.",
-      "Hear exactly how it will sound to your customers.",
-      "No cost, no commitment. A summary follows to your inbox.",
-    ],
+    points: [],
+    // Rendered under the title in place of the bullet list.
+    content: <UseCaseExplorer />,
+    // The intro's "Find your use case" link lands here.
+    id: "explore",
   },
 ];
 
@@ -116,7 +134,37 @@ export const DEFAULT_CHAPTERS = [
 
 const DEG = Math.PI / 180;
 const TAU = Math.PI * 2;
-const TILT = 0.85; // how much of the focus latitude the globe tilts toward
+// The docked globe: always on screen along the bottom edge. Tune the look here.
+const DOCK_HEIGHT = 0.55; // how far the globe rises above the bottom edge, as a fraction of the viewport height
+const DOCK_SCALE = 1; // 1 = the globe's chord spans the full width; lower = a smaller globe
+const DOCK_LIFT = 0.5; // radians; how high in the visible part a chapter's region is shown
+const DOCK_OPACITY = 0.6; // lower keeps the text over it readable
+const DOCK_SPIN = 0.020; // radians per second of idle turning: the one spin rate, in the chapters and after them
+// The swing of the globe from one chapter's region to the next. It has its own
+// smoothing, apart from the text and arcs (which follow the scroll closely).
+const SWING_FOLLOW = 1.5; // how closely the swing follows the scroll: lower = slower, more gliding. About 1 / this many seconds behind
+const SWING_FROM = 0.4; // how far into a chapter (0 to 1) the swing to the next region begins: lower = starts earlier, so a longer, slower turn
+const DOCK_DETAIL_PX = 330; // on-screen globe radius that the arcs, dots and markers were designed for
+const LAND_DOTS = 150000; // points scattered over the whole sphere, before the land mask keeps ~30% of them: more = denser continents
+const LAND_DOT_SIZE = 0.012; // dot size as a fraction of the globe radius (before the docked shrink)
+const COAST_OPACITY = 0.8; // coastline overlay brightness; 0 hides it
+const COAST_LIFT = 1.004; // how far above the dots it sits, as a multiple of the globe radius
+const DOCK_FOV = 22; // degrees; narrow, so the near surface isn't magnified
+
+/**
+ * The docked globe as a circle on screen: radius `r`, rising `capH` above the
+ * bottom edge, so its centre is below the viewport. Sized so its chord across
+ * the bottom edge is nearly the full width (then scaled down by DOCK_SCALE).
+ */
+function dockGeometry(W, H) {
+  const rise = H * DOCK_HEIGHT;
+  let r = (DOCK_SCALE * (W * W) / 4 + DOCK_SCALE * rise * rise) / (2 * rise);
+  // On a phone that formula gives a small sphere that barely clears the edge,
+  // so narrow screens get a bigger one, a little wider than the screen.
+  if (W < 760) r = Math.max(r, W * 0.62);
+  return { r, capH: Math.min(rise, r * 0.95) };
+}
+
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const smoothstep = (a, b, v) => {
@@ -145,12 +193,14 @@ function greatCircleKm(a, b) {
   return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
 
-function makeLandTest(b64) {
-  const bin = atob(b64);
+/** (lat, lon) -> 1 if that spot is land. Row 0 is 90°N and column 0 is 180°W. */
+function makeLandTest({ w, h, data }) {
+  const bin = atob(data);
+  const perDeg = w / 360;
   return (lat, lon) => {
-    const row = clamp(Math.floor(90 - lat), 0, 179);
-    const col = ((Math.floor(lon + 180) % 360) + 360) % 360;
-    const i = row * 360 + col;
+    const row = clamp(Math.floor((90 - lat) * perDeg), 0, h - 1);
+    const col = ((Math.floor((lon + 180) * perDeg) % w) + w) % w;
+    const i = row * w + col;
     return (bin.charCodeAt(i >> 3) >> (7 - (i & 7))) & 1;
   };
 }
@@ -254,7 +304,7 @@ export default function ScrollGlobe({
   airports = DEFAULT_AIRPORTS,
   color = "#ff2e43",
   background = "#090203",
-  heightPerChapter = 120, // vh of scrolling per chapter
+  heightPerChapter = 55, // vh each chapter takes up in the page: lower = sections closer together
   loadFonts = true,
   className = "",
   // `= undefined` only so TS, which infers this component's props from the JS
@@ -264,11 +314,10 @@ export default function ScrollGlobe({
 }) {
   const rootRef = useRef(null);
   const canvasHostRef = useRef(null);
-  const chapterEls = useRef([]);
   const pointEls = useRef({});
-  const labelEls = useRef({});
   const railEls = useRef([]);
-  const hintEl = useRef(null);
+  const footEl = useRef(null);
+  const labelEls = useRef({});
 
   const routes = useMemo(() => {
     const list = [];
@@ -330,8 +379,15 @@ export default function ScrollGlobe({
     host.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
-    const tanHalf = Math.tan(20 * DEG);
+    const camera = new THREE.PerspectiveCamera(DOCK_FOV, 1, 0.1, 100);
+    const tanHalf = Math.tan((DOCK_FOV / 2) * DEG);
+    // The arcs, dots and markers are sized in world units for a globe about
+    // DOCK_DETAIL_PX across; docked, it is bigger, so they shrink to match.
+    const detail = clamp(
+      DOCK_DETAIL_PX / dockGeometry(window.innerWidth, window.innerHeight).r,
+      0.2,
+      1.2
+    );
     const globe = new THREE.Group();
     scene.add(globe);
 
@@ -364,15 +420,22 @@ export default function ScrollGlobe({
     globe.add(new THREE.Mesh(track(new THREE.SphereGeometry(R * 0.995, 72, 72)), baseMat));
 
     /* ---------- land as a field of dots ---------- */
-    const isLand = makeLandTest(LAND_MASK);
-    const DOTS = 30000;
+    const isLand = makeLandTest(LAND);
+    const DOTS = LAND_DOTS;
+    const SPACING_DEG = Math.sqrt((4 * Math.PI) / DOTS) / DEG; // gap between neighbouring dots
     const golden = Math.PI * (3 - Math.sqrt(5));
     const pos = [];
     const rnd = [];
     for (let i = 0; i < DOTS; i++) {
       const y = 1 - (i / (DOTS - 1)) * 2;
-      const lat = Math.asin(y) / DEG;
-      const lon = (((golden * i) / DEG) % 360) - 180;
+      // Nudged by up to 0.4 of the dot spacing: a regular lattice seen edge-on
+      // lines up into stripes near the globe's rim, and the nudge breaks that
+      // up. It also softens the land mask's 1° stair-steps along the coasts.
+      const lat = Math.asin(y) / DEG + (Math.random() - 0.5) * SPACING_DEG * 0.8;
+      const lon =
+        (((golden * i) / DEG) % 360) -
+        180 +
+        ((Math.random() - 0.5) * SPACING_DEG * 0.8) / Math.max(0.1, Math.cos(lat * DEG));
       if (!isLand(lat, lon)) continue;
       const v = latLonToVec3(lat, lon, R * 1.002);
       pos.push(v.x, v.y, v.z);
@@ -390,14 +453,15 @@ export default function ScrollGlobe({
           uTime: { value: 0 },
           uH: { value: 800 },
           uTan: { value: tanHalf },
+          uPt: { value: LAND_DOT_SIZE * detail },
           uTwinkle: { value: reduceMotion ? 0 : 1 },
         },
         vertexShader: `
-          uniform float uH; uniform float uTan;
+          uniform float uH; uniform float uTan; uniform float uPt;
           attribute float aRand; varying float vRand; varying float vFacing;
           void main(){
             vec4 mv = modelViewMatrix * vec4(position, 1.0);
-            gl_PointSize = 0.0125 * uH / (2.0 * uTan * -mv.z);
+            gl_PointSize = uPt * uH / (2.0 * uTan * -mv.z);
             gl_Position = projectionMatrix * mv;
             vRand = aRand;
             vFacing = normalize(normalMatrix * normalize(position)).z;
@@ -441,6 +505,38 @@ export default function ScrollGlobe({
     );
     globe.add(new THREE.LineSegments(gratGeo, gratMat));
 
+    /* ---------- coastlines (Natural Earth, thinned; see scripts/build-coastlines.mjs) ---------- */
+    // Drawn over the dots, so the land is a field of dots with a clean edge.
+    // Long straight stretches are split, because a chord between two far-apart
+    // points would cut under the sphere's surface and vanish behind it.
+    const coast = [];
+    const cr = R * COAST_LIFT;
+    const MAX_STEP = 2 * DEG;
+    COASTLINES.forEach((line) => {
+      for (let i = 0; i + 3 < line.length; i += 2) {
+        const a = latLonToVec3(line[i + 1], line[i], 1);
+        const b = latLonToVec3(line[i + 3], line[i + 2], 1);
+        const steps = Math.max(1, Math.ceil(a.angleTo(b) / MAX_STEP));
+        let from = a;
+        for (let s = 1; s <= steps; s++) {
+          const to = s === steps ? b : a.clone().lerp(b, s / steps).normalize();
+          coast.push(from.x * cr, from.y * cr, from.z * cr, to.x * cr, to.y * cr, to.z * cr);
+          from = to;
+        }
+      }
+    });
+    const coastGeo = track(new THREE.BufferGeometry());
+    coastGeo.setAttribute("position", new THREE.Float32BufferAttribute(coast, 3));
+    const coastMat = track(
+      new THREE.LineBasicMaterial({
+        color: red,
+        transparent: true,
+        opacity: COAST_OPACITY,
+        depthWrite: false,
+      })
+    );
+    globe.add(new THREE.LineSegments(coastGeo, coastMat));
+
     /* ---------- atmosphere halo (camera-facing sprite) ---------- */
     const haloTex = track(
       radialTexture(512, [
@@ -474,9 +570,9 @@ export default function ScrollGlobe({
     );
 
     /* ---------- airport markers ---------- */
-    const ringGeo = track(new THREE.RingGeometry(0.013, 0.019, 40));
-    const coreGeo = track(new THREE.CircleGeometry(0.0075, 24));
-    const pulseGeo = track(new THREE.RingGeometry(0.017, 0.02, 40));
+    const ringGeo = track(new THREE.RingGeometry(0.013 * detail, 0.019 * detail, 40));
+    const coreGeo = track(new THREE.CircleGeometry(0.0075 * detail, 24));
+    const pulseGeo = track(new THREE.RingGeometry(0.017 * detail, 0.02 * detail, 40));
     const zAxis = new THREE.Vector3(0, 0, 1);
     const markers = {};
     usedAirports.forEach((code, i) => {
@@ -515,12 +611,12 @@ export default function ScrollGlobe({
       const a = latLonToVec3(A.lat, A.lon, R * 1.002);
       const b = latLonToVec3(B.lat, B.lon, R * 1.002);
       const ang = a.angleTo(b);
-      const alt = 0.05 + (ang / Math.PI) * 0.5;
+      const alt = 0.05 + (ang / Math.PI) * 0.25;
       const c1 = a.clone().lerp(b, 0.25).normalize().multiplyScalar(R * (1 + alt));
       const c2 = a.clone().lerp(b, 0.75).normalize().multiplyScalar(R * (1 + alt));
       const curve = new THREE.CubicBezierCurve3(a, c1, c2, b);
-      const coreGeoA = track(new THREE.TubeGeometry(curve, SEG, 0.0042, RAD, false));
-      const glowGeoA = track(new THREE.TubeGeometry(curve, SEG, 0.012, RAD, false));
+      const coreGeoA = track(new THREE.TubeGeometry(curve, SEG, 0.0042 * detail, RAD, false));
+      const glowGeoA = track(new THREE.TubeGeometry(curve, SEG, 0.012 * detail, RAD, false));
       const coreMat = track(
         new THREE.MeshBasicMaterial({
           color: hot,
@@ -557,9 +653,9 @@ export default function ScrollGlobe({
           })
         );
       const head = new THREE.Sprite(spriteMat(hot));
-      head.scale.set(0.1, 0.1, 1);
+      head.scale.set(0.1 * detail, 0.1 * detail, 1);
       const traffic = new THREE.Sprite(spriteMat(hot));
-      traffic.scale.set(0.055, 0.055, 1);
+      traffic.scale.set(0.055 * detail, 0.055 * detail, 1);
       globe.add(head, traffic);
 
       const start = r.chapter + 0.08 + r.index * (0.42 / Math.max(1, r.count));
@@ -584,13 +680,13 @@ export default function ScrollGlobe({
     /* ---------- chapter camera targets ---------- */
     const rotY = [];
     const rotX = [];
-    const dist = [];
     chapters.forEach((c, i) => {
       const v = latLonToVec3(c.focus.lat, c.focus.lon, 1);
       const raw = -Math.atan2(v.x, v.z);
       rotY.push(i === 0 ? raw : rotY[i - 1] + wrapPi(raw - rotY[i - 1]));
-      rotX.push(c.focus.lat * DEG * TILT);
-      dist.push(c.distance || 3.8);
+      // Apparent latitude = lat - rotation.x, so this puts the region DOCK_LIFT
+      // above the globe's middle, inside the part that is on screen.
+      rotX.push(c.focus.lat * DEG - DOCK_LIFT);
     });
 
     /* ---------- bullet reveal timings ---------- */
@@ -606,17 +702,23 @@ export default function ScrollGlobe({
     });
 
     /* ---------- sizing ---------- */
+    // The host is a fixed, viewport-sized layer (see .sg-canvas), so W and H are
+    // the viewport. The globe is always docked: a circle of radius rPx whose
+    // centre sits below the bottom edge, so only its top rises into view. The
+    // camera distance that projects the sphere that large, and the view offset
+    // that drops its centre off-screen, are worked out here on every resize.
     let W = 1;
     let H = 1;
-    let mobile = false;
     const resize = () => {
       W = Math.max(1, host.clientWidth);
       H = Math.max(1, host.clientHeight);
-      mobile = W < 760;
       renderer.setSize(W, H, false);
       camera.aspect = W / H;
-      if (mobile) camera.setViewOffset(W, H, 0, H * 0.16, W, H);
-      else camera.setViewOffset(W, H, -W * 0.16, 0, W, H);
+      const { r: rPx, capH } = dockGeometry(W, H);
+      const d = 1 / Math.sin(Math.atan((rPx * 2 * tanHalf) / H));
+      camera.position.set(0, 0, d);
+      camera.lookAt(0, 0, 0);
+      camera.setViewOffset(W, H, 0, -(H / 2 - capH + rPx), W, H);
       camera.updateProjectionMatrix();
       dotMat.uniforms.uH.value = H * renderer.getPixelRatio();
     };
@@ -624,18 +726,14 @@ export default function ScrollGlobe({
     const ro = new ResizeObserver(resize);
     ro.observe(host);
 
-    let visible = true;
-    const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting), {
-      rootMargin: "100px",
-    });
-    io.observe(root);
-
     /* ---------- loop ---------- */
+    // No visibility gate: the globe is on screen for the whole page.
     let raf = 0;
     let last = performance.now();
     let time = 0;
     let sCur = 0;
-    let spin = 0;
+    let rCur = 0; // like sCur, but for the globe's swing between regions
+    let dockSpin = 0;
     const wp = new THREE.Vector3();
     const camDir = new THREE.Vector3();
     const nrm = new THREE.Vector3();
@@ -645,36 +743,36 @@ export default function ScrollGlobe({
       raf = requestAnimationFrame(frame);
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
-      if (!visible) return;
       time += dt;
 
-      // Scroll progress through this component (0 → N)
+      // Which chapter the reader is in: the chapters are stacked in the page,
+      // and a line a little below the viewport's middle, moving down through them, is the
+      // progress (0 → N).
       const rect = root.getBoundingClientRect();
-      const travel = Math.max(1, rect.height - window.innerHeight);
-      const p = clamp(-rect.top / travel, 0, 1);
-      const sTarget = p * N;
-      sCur += (sTarget - sCur) * (1 - Math.exp(-dt * (reduceMotion ? 20 : 5)));
+      const mid = window.innerHeight * 0.7; // a line lower than centre, so text is lit by the time it is read
+      const sTarget = clamp((mid - rect.top) / Math.max(1, rect.height), 0, 1) * N;
+      sCur += (sTarget - sCur) * (1 - Math.exp(-dt * (reduceMotion ? 20 : 2)));
 
       const ci = Math.min(Math.floor(sCur), N - 1);
-      const f = clamp(sCur - ci, 0, 1);
-      const nx = Math.min(ci + 1, N - 1);
-      const tr = ci < N - 1 ? smoothstep(0.7, 1.0, f) : 0;
 
-      // Slow spin in the overview chapter, unwound smoothly when leaving it
-      const spinW = hasOverview ? smoothstep(N - 1 + 0.15, N - 1 + 0.5, sCur) : 0;
-      if (!reduceMotion) spin += dt * 0.1 * spinW;
-      const home = Math.round(spin / TAU) * TAU;
-      spin += (home - spin) * (1 - spinW) * Math.min(1, dt * 2.5);
+      // The globe's own, slower position through the chapters. Same rate whether
+      // or not the system asks for reduced motion: it is a glide, not a jump.
+      rCur += (sTarget - rCur) * (1 - Math.exp(-dt * SWING_FOLLOW));
+      const rci = Math.min(Math.floor(rCur), N - 1);
+      const rnx = Math.min(rci + 1, N - 1);
+      const rtr = rci < N - 1 ? smoothstep(SWING_FROM, 1.0, rCur - rci) : 0;
+
       const idle = reduceMotion ? 0 : Math.sin(time * 0.25) * 0.025;
 
-      const ry = lerp(rotY[ci], rotY[nx], tr) + spin + idle;
-      const rx = lerp(rotX[ci], rotX[nx], tr);
+      // Turns to each chapter's region as it is read, and keeps turning on its
+      // own at one constant rate, DOCK_SPIN, from the first screen to the last.
+      // Nothing else adds turning (an overview-chapter spin and a scroll-linked
+      // turn used to, which sped it up in the last chapter and while scrolling
+      // past it).
+      if (!reduceMotion) dockSpin += dt * DOCK_SPIN;
+      const ry = lerp(rotY[rci], rotY[rnx], rtr) + idle + dockSpin;
+      const rx = lerp(rotX[rci], rotX[rnx], rtr);
       globe.rotation.set(rx, ry, 0);
-
-      let d = lerp(dist[ci], dist[nx], tr);
-      if (camera.aspect < 1) d = Math.max(d, 0.95 / (tanHalf * camera.aspect));
-      camera.position.set(0, 0, d);
-      camera.lookAt(0, 0, 0);
 
       dotMat.uniforms.uTime.value = time;
       Object.values(markers).forEach((m) => (m.target = 0));
@@ -751,20 +849,20 @@ export default function ScrollGlobe({
         label.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
       });
 
-      // Text + HUD
-      chapterEls.current.forEach((el, i) => {
-        if (!el) return;
-        const fin = i === 0 ? 1 : smoothstep(i - 0.12, i + 0.12, sCur);
-        const fout = i === N - 1 ? 0 : smoothstep(i + 0.78, i + 0.95, sCur);
-        const o = fin * (1 - fout);
-        el.style.opacity = o.toFixed(3);
-        el.style.transform = `translateY(${((1 - o) * (sCur < i + 0.5 ? 14 : -14)).toFixed(1)}px)`;
-        el.style.visibility = o < 0.01 ? "hidden" : "visible";
-      });
+
+      // Progress rail: segment i fills as chapter i is read. It belongs to the
+      // chapters, so it fades out once they have scrolled past.
       railEls.current.forEach((el, i) => {
         if (el) el.style.transform = `scaleX(${clamp(sCur - i, 0, 1)})`;
       });
-      if (hintEl.current) hintEl.current.style.opacity = String(1 - smoothstep(0.02, 0.2, sCur));
+      if (footEl.current) {
+        // In as the chapters arrive (the intro sits above them), out once they
+        // have scrolled past.
+        footEl.current.style.opacity = (
+          smoothstep(0, window.innerHeight * 0.3, mid - rect.top) *
+          (1 - smoothstep(0, window.innerHeight * 0.3, mid - rect.bottom))
+        ).toFixed(3);
+      }
 
       renderer.render(scene, camera);
     };
@@ -773,7 +871,6 @@ export default function ScrollGlobe({
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
-      io.disconnect();
       disposables.forEach((d) => d.dispose && d.dispose());
       renderer.dispose();
       if (renderer.domElement.parentNode) renderer.domElement.parentNode.removeChild(renderer.domElement);
@@ -782,17 +879,22 @@ export default function ScrollGlobe({
 
   const N = chapters.length;
   const css = `
-    .sg-root{position:relative;background:${background};color:#f4dadc;
+    .sg-root{position:relative;color:#f4dadc;
       font-family:'B612',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;}
-    .sg-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;
-      background:radial-gradient(90% 80% at 66% 50%, rgba(${tint},0.09), rgba(${tint},0) 60%), ${background};}
-    .sg-canvas{position:absolute;inset:0}
+    /* Fixed: the globe is docked along the bottom edge for the whole page. It
+       paints above the page ground and below the chapters and the sections that
+       follow, which are positioned and come later. */
+    .sg-canvas{position:fixed;inset:0;pointer-events:none;opacity:${DOCK_OPACITY}}
     .sg-canvas canvas{display:block;width:100%;height:100%}
     .sg-mono{font-family:'B612 Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-    /* Wider than the original 440px: six bullet lines need the measure. */
-    .sg-chapters{position:absolute;left:clamp(20px,5vw,72px);top:0;bottom:0;width:min(560px,44vw)}
-    .sg-chapter{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
-      opacity:0;will-change:opacity,transform}
+    /* The chapters sit one under another in the page. */
+    .sg-chapters{position:relative;margin-left:clamp(20px,5vw,72px);width:min(560px,calc(100% - 40px))}
+    /* Text starts at the top of each chapter's box rather than centred in it,
+       so a short chapter (three points) sits high instead of sinking. Every box
+       keeps the same height: the scroll mapping assumes equal chapters. */
+    .sg-chapter{display:flex;flex-direction:column;justify-content:flex-start;padding:6vh 0}
+    /* The first chapter starts right under the header. */
+    .sg-chapter:first-child{padding-top:1.5rem}
     .sg-title{font-size:clamp(26px,2.9vw,40px);line-height:1.08;font-weight:700;margin:0 0 22px;
       letter-spacing:-0.01em;color:#fff1f2}
     .sg-body{font-size:15px;line-height:1.62;color:#dcb9bd;margin:0 0 28px;max-width:40ch}
@@ -815,98 +917,85 @@ export default function ScrollGlobe({
     /* Clipped rather than scaled: scaleX would squash the bars sideways instead
        of revealing them. Starts fully clipped; the loop opens it on scroll. */
     .sg-wave .sg-fill{clip-path:inset(0 100% 0 0);will-change:clip-path}
-    .sg-foot{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:flex-end;justify-content:space-between;
-      gap:24px;padding:22px clamp(20px,4vw,56px);font-size:12px;color:#b98b91;pointer-events:none}
+    /* Where the reader is in the chapters: one segment each, bottom left. Fixed,
+       like the globe, and faded out by the loop once the chapters are behind. */
+    .sg-foot{position:fixed;left:0;bottom:0;padding:22px clamp(20px,4vw,56px);pointer-events:none;opacity:0}
     .sg-rail{display:flex;gap:6px;width:min(300px,34vw)}
     .sg-seg{position:relative;flex:1;height:2px;background:rgba(${tint},0.2)}
     .sg-seg i{position:absolute;inset:0;background:rgb(${tint});transform-origin:left center;transform:scaleX(0)}
-    .sg-hint{position:absolute;left:50%;bottom:74px;transform:translateX(-50%);font-size:12px;color:#b98b91;
-      display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none}
-    .sg-hint i{width:1px;height:28px;background:linear-gradient(rgba(${tint},0),rgb(${tint}));
-      animation:sg-drop 1.8s ease-in-out infinite}
-    @keyframes sg-drop{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}
-      51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
-    .sg-shade{display:none}
     @media (max-width:760px){
-      .sg-shade{display:block;position:absolute;left:0;right:0;bottom:0;height:58%;pointer-events:none;
-        background:linear-gradient(rgba(0,0,0,0), ${background} 38%)}
-      .sg-chapters{left:20px;right:20px;width:auto;top:38%;bottom:56px}
-      .sg-chapter{justify-content:flex-end;overflow-y:auto}
+      .sg-rail{width:40vw}
+      .sg-chapters{margin:0 20px;width:auto}
       .sg-title{font-size:24px;margin-bottom:14px}
       .sg-body{font-size:14px;margin-bottom:18px}
       .sg-points{gap:14px}
       .sg-point-row{gap:11px}
       .sg-point-text{font-size:15px;line-height:1.45}
       .sg-dot{width:7px;height:7px}
-      .sg-rail{width:40vw}
-      .sg-hint{display:none}
     }
-    @media (prefers-reduced-motion: reduce){ .sg-hint i{animation:none} }
   `;
 
   return (
     <section
       ref={rootRef}
       className={`sg-root ${className}`}
-      style={{ height: `${N * heightPerChapter}vh`, ...style }}
+      style={style}
       aria-label="Flight route monitor"
     >
       <style>{css}</style>
-      <div className="sg-stage">
-        <div ref={canvasHostRef} className="sg-canvas" aria-hidden="true" />
+      <div ref={canvasHostRef} className="sg-canvas" aria-hidden="true" />
 
-        <div className="sg-shade" />
+      <div className="sg-chapters">
+        {chapters.map((c, i) => {
+          const pts = c.points || [];
+          return (
+            <article
+              key={i}
+              id={c.id}
+              className="sg-chapter"
+              style={{ minHeight: `${heightPerChapter}vh` }}
+            >
+              {/* Rendered only when set, so a blank slide collapses instead
+                  of leaving an empty heading holding its margins open. */}
+              {c.heading}
+              {c.title && <h2 className="sg-title">{markAI(c.title)}</h2>}
+              {c.body && <p className="sg-body">{markAI(c.body)}</p>}
+              {pts.length > 0 && (
+                <ul className="sg-points">
+                  {pts.map((text, j) => (
+                    <li
+                      key={j}
+                      className="sg-point"
+                      ref={(el) => {
+                        if (!el) return;
+                        pointEls.current[`${i}-${j}`] = {
+                          el,
+                          fill: el.querySelector(".sg-fill"),
+                        };
+                      }}
+                    >
+                      <span className="sg-point-row">
+                        <span className="sg-dot" aria-hidden="true" />
+                        <span className="sg-point-text">{markAI(text)}</span>
+                      </span>
+                      <Waveform seed={i * 7 + j * 3 + 1} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {c.content}
+            </article>
+          );
+        })}
+      </div>
 
-        <div className="sg-chapters">
-          {chapters.map((c, i) => {
-            const pts = c.points || [];
-            return (
-              <article key={i} className="sg-chapter" ref={(el) => (chapterEls.current[i] = el)}>
-                {/* Rendered only when set, so a blank slide collapses instead
-                    of leaving an empty heading holding its margins open. */}
-                {c.title && <h2 className="sg-title">{markAI(c.title)}</h2>}
-                {c.body && <p className="sg-body">{markAI(c.body)}</p>}
-                {pts.length > 0 && (
-                  <ul className="sg-points">
-                    {pts.map((text, j) => (
-                      <li
-                        key={j}
-                        className="sg-point"
-                        ref={(el) => {
-                          if (!el) return;
-                          pointEls.current[`${i}-${j}`] = {
-                            el,
-                            fill: el.querySelector(".sg-fill"),
-                          };
-                        }}
-                      >
-                        <span className="sg-point-row">
-                          <span className="sg-dot" aria-hidden="true" />
-                          <span className="sg-point-text">{markAI(text)}</span>
-                        </span>
-                        <Waveform seed={i * 7 + j * 3 + 1} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </article>
-            );
-          })}
-        </div>
-
-        <div className="sg-hint sg-mono" ref={hintEl}>
-          <span>Scroll to follow the routes</span>
-          <i />
-        </div>
-
-        <div className="sg-foot sg-mono">
-          <div className="sg-rail" aria-hidden="true">
-            {chapters.map((_, i) => (
-              <span key={i} className="sg-seg">
-                <i ref={(el) => (railEls.current[i] = el)} />
-              </span>
-            ))}
-          </div>
+      <div className="sg-foot" ref={footEl} aria-hidden="true">
+        <div className="sg-rail">
+          {chapters.map((_, i) => (
+            <span key={i} className="sg-seg">
+              <i ref={(el) => (railEls.current[i] = el)} />
+            </span>
+          ))}
         </div>
       </div>
     </section>

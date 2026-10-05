@@ -343,6 +343,7 @@ model Organization {
   subscription        Subscription?
   invoices            Invoice[]
   meetings            Meeting[]
+  contacts            Contact[]
   paymentMethods      PaymentMethod[]
   apiKeys             ApiKey[]
   integrations        Integration[]
@@ -784,6 +785,26 @@ model Meeting {
 
   @@index([organizationId, startsAt])
   @@index([agentId])
+}
+
+// A person an organization chose to keep from a call. One per phone number per
+// organization (e164, as Retell reports it), so a repeat caller finds the same
+// contact. sourceCallId is the call it was saved from, a plain id rather than a
+// relation: deleting a call's history must not delete the contact.
+model Contact {
+  id             String            @id @default(uuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String?
+  phone          String
+  email          String?
+  notes          String?
+  sourceCallId   String?
+  createdAt      TimestamptzString @default(now())
+  updatedAt      temporal.updatedAtString()
+
+  @@unique([organizationId, phone])
+  @@index([organizationId, createdAt])
 }
 
 // =============================================================================

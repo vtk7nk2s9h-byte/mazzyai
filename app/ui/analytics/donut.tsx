@@ -6,7 +6,10 @@ import { Cell, Label, Pie, PieChart, Tooltip } from 'recharts';
 export type Slice = { name: string; value: number };
 
 // Brand reds first, then neutrals, so a slice never reads as an unrelated hue.
-export const COLORS = ['#ff2e43', '#8c1925', '#cf8e9c', '#5e1622', '#a08f93', '#4a1119'];
+// All reds but one grey, light to dark, so neighbouring series stay apart.
+// The third is the soft red the site already uses (#ff6b78); a pink, a gold
+// and a pale grey were tried there and dropped.
+export const COLORS = ['#ff2e43', '#8c1925', '#ff6b78', '#5e1622', '#a08f93', '#4a1119'];
 
 /**
  * One donut: the slices, a legend with each value, and the headline figure in
@@ -35,7 +38,7 @@ export default function Donut({
   inlineLegend?: boolean;
 }) {
   const format = (n: number) =>
-    currency ? `$${n.toFixed(2)}` : n.toLocaleString();
+    currency ? `$${n.toFixed(2)}` : n.toLocaleString('en');
   const empty = slices.every((s) => s.value === 0);
   return (
     <section className="rounded-lg border border-white/[0.07] bg-white/[0.05] p-4 backdrop-blur-xl">

@@ -17,6 +17,8 @@ type GlassCardProps = CardItem & {
   /** Offsets this card's border arc so a row doesn't animate in lockstep. */
   index?: number;
   className?: string;
+  /** Tighter padding and a smaller icon, for a shorter card. */
+  compact?: boolean;
 };
 
 /**
@@ -39,6 +41,7 @@ export function GlassCard({
   href,
   index = 0,
   className,
+  compact = false,
 }: GlassCardProps) {
   return (
     <article
@@ -60,7 +63,12 @@ export function GlassCard({
         className="glow-ring pointer-events-none absolute inset-0 z-10 rounded-[inherit]"
       />
 
-      <div className="relative flex h-full flex-col overflow-hidden rounded-[inherit] border border-white/[0.07] bg-white/[0.035] p-7 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl">
+      <div
+        className={cn(
+          'relative flex h-full flex-col overflow-hidden rounded-[inherit] border border-white/[0.07] bg-white/[0.035] shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl',
+          compact ? 'p-5' : 'p-7',
+        )}
+      >
         {/* Specular sheen across the top edge — what sells the surface as
             glass rather than a flat translucent fill. */}
         <div
@@ -72,7 +80,12 @@ export function GlassCard({
           className="pointer-events-none absolute -left-16 -top-24 h-48 w-48 rounded-full bg-maroon-400/20 blur-3xl transition-opacity duration-500 group-hover:opacity-80"
         />
 
-        <span className="relative mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-[#ff6b78] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition-colors duration-300 group-hover:border-maroon-400/50 group-hover:text-[#ff8a95]">
+        <span
+          className={cn(
+            'relative inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-[#ff6b78] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition-colors duration-300 group-hover:border-maroon-400/50 group-hover:text-[#ff8a95]',
+            compact ? 'mb-3 h-10 w-10' : 'mb-6 h-12 w-12',
+          )}
+        >
           <Icon className="h-5 w-5" strokeWidth={1.75} />
         </span>
 
@@ -100,13 +113,18 @@ export function GlassCard({
 type CardSectionProps = {
   /** Slugified into the heading id the section is labelled by. */
   id: string;
-  title: string;
+  /** Omit to render just the cards, with no heading block. */
+  title?: string;
   eyebrow?: string;
   description?: string;
   items: CardItem[];
   /** Rendered between the heading and the card row — e.g. the explorer. */
   children?: React.ReactNode;
   className?: string;
+  /** Overrides the card row's default gap-6. */
+  gridClassName?: string;
+  /** Shorter cards, passed down to each GlassCard. */
+  compact?: boolean;
 };
 
 /** Centred heading, an optional block of its own, then a row of three cards. */
@@ -118,28 +136,32 @@ export default function CardSection({
   items,
   children,
   className,
+  gridClassName,
+  compact,
 }: CardSectionProps) {
   const headingId = `${id}-heading`;
 
   return (
     <section
       id={id}
-      aria-labelledby={headingId}
+      aria-labelledby={title ? headingId : undefined}
       className={cn('mx-auto w-full max-w-6xl px-6 py-24', className)}
     >
-      <SectionHeading
-        id={headingId}
-        title={title}
-        eyebrow={eyebrow}
-        description={description}
-        className="mb-16"
-      />
+      {title ? (
+        <SectionHeading
+          id={headingId}
+          title={title}
+          eyebrow={eyebrow}
+          description={description}
+          className="mb-16"
+        />
+      ) : null}
 
       {children}
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className={cn('grid grid-cols-1 gap-6 md:grid-cols-3', gridClassName)}>
         {items.map((item, i) => (
-          <GlassCard key={item.title} index={i} {...item} />
+          <GlassCard key={item.title} index={i} compact={compact} {...item} />
         ))}
       </div>
     </section>

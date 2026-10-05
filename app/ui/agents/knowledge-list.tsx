@@ -46,7 +46,7 @@ export default async function KnowledgeList({
   return (
     <div className="mt-4 flow-root overflow-x-auto">
       <div className="inline-block min-w-full align-middle">
-        <div className="rounded-lg bg-gray-50 p-2">
+        <div className="rounded-lg bg-gray-50 p-2 border border-white/[0.12]">
           <table className="min-w-full text-sm text-gray-900">
             <thead className="text-left font-normal">
               <tr>

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import { cn } from "@/app/lib/utils.ts"
+import CallRecording from '@/components/ui/call-recording';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -737,6 +738,11 @@ export const industryOptions = categories.map((c) => ({
   businesses: c.businesses.map((b) => b.name),
 }));
 
+/** Each sector's icon by its label, for lists beside the selector (the intro's ticker). */
+export const sectorIcons: Record<string, LucideIcon> = Object.fromEntries(
+  categories.map((c) => [c.label, c.icon]),
+);
+
 
 /**
  * One row of a dropdown panel — the header's ListItem without the link:
@@ -781,6 +787,8 @@ function Option({
   );
 }
 
+const stopHover = (e: React.PointerEvent) => e.preventDefault();
+
 type OptionItem = {
   icon: LucideIcon;
   title: string;
@@ -817,16 +825,27 @@ function Selector({
         {label}
       </span>
 
-      {/* max-w-none and the child override undo the primitive's max-w-max, so
-          the trigger fills its column and the panel hangs under all of it. */}
+      {/* max-w-none and the first-child override undo the primitive's
+          max-w-max, so the trigger fills its column. Only the list's wrapper
+          is widened: the panel's own wrapper (the last div) is left at its
+          width, because forcing it to the column's made the viewport shrink
+          and clip the list. */}
       <NavigationMenu
         value={open}
         onValueChange={setOpen}
-        className="w-full max-w-none [&>div]:w-full"
+        // The last div is the panel's viewport, opaque by default; this gives
+        // it the system's glass (as in glass-select.tsx) instead.
+        className="w-full max-w-none [&>div:first-child]:w-full [&>div:last-child>div]:!border-white/[0.07] [&>div:last-child>div]:!bg-[#140a0d]/70 [&>div:last-child>div]:backdrop-blur-xl"
       >
         <NavigationMenuList className="w-full space-x-0">
           <NavigationMenuItem value={label} className="w-full">
             <NavigationMenuTrigger
+              // Radix opens on hover; cancelling its pointer handlers leaves
+              // only the click, and keeps the panel from closing when the
+              // pointer drifts off. Outside click and Escape still close it.
+              onPointerEnter={stopHover}
+              onPointerMove={stopHover}
+              onPointerLeave={stopHover}
               className={cn(
                 'h-auto w-full justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.045] px-4 py-3',
                 'text-sm font-medium text-gray-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl',
@@ -845,8 +864,14 @@ function Selector({
               </span>
             </NavigationMenuTrigger>
 
-            <NavigationMenuContent className="p-1 pb-1.5">
-              <ul className="bg-popover grid w-[min(32rem,calc(100vw-3rem))] gap-1 rounded-md border p-2 shadow sm:grid-cols-2">
+            <NavigationMenuContent
+              onPointerEnter={stopHover}
+              onPointerLeave={stopHover}
+              className="p-1 pb-1.5"
+            >
+              {/* One column, left-aligned under its trigger; the glass is on
+                  the viewport around it. */}
+              <ul className="grid w-[min(24rem,calc(100vw-3rem))] gap-1 p-2">
                 {options.map((option, i) => (
                   <li key={option.title}>
                     <Option
@@ -864,6 +889,61 @@ function Selector({
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
+    </div>
+  );
+}
+
+/** "Takeaway & Food Delivery" → "takeaway-food-delivery". */
+const demoSlug = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+/**
+ * The voice demo for one business. A demo is two files in public/audio/demos,
+ * named after the business: <slug>.wav and <slug>.peaks.json (made with
+ * `node scripts/audio-peaks.mjs public/audio/demos/<slug>.wav`). Dropping them
+ * in is all it takes — a business with no files shows a "coming soon" note.
+ * Keyed by business in the parent, so switching starts from a clean state.
+ */
+function BusinessDemo({ name }: { name: string }) {
+  const slug = demoSlug(name);
+  const [peaks, setPeaks] = React.useState<number[] | null | undefined>(undefined);
+
+  React.useEffect(() => {
+    let live = true;
+    fetch(`/audio/demos/${slug}.peaks.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => live && setPeaks(Array.isArray(data) ? data : null))
+      .catch(() => live && setPeaks(null));
+    return () => {
+      live = false;
+    };
+  }, [slug]);
+
+  if (peaks) {
+    return (
+      <CallRecording
+        embedded
+        src={`/audio/demos/${slug}.wav`}
+        peaks={peaks}
+        title={name}
+        subtitle={`A sample call: the agent answers for a ${name.toLowerCase()}.`}
+      />
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-[0.28em] text-gray-400">
+        Hear it live
+      </p>
+      <p className="mt-3 text-sm text-gray-500">
+        {peaks === undefined
+          ? 'Loading the demo…'
+          : `A voice demo for ${name} is coming soon.`}
+      </p>
     </div>
   );
 }
@@ -977,6 +1057,10 @@ export default function UseCaseExplorer() {
               </li>
             ))}
           </ul>
+
+          <div className="relative mt-7 border-t border-white/[0.07] pt-6">
+            <BusinessDemo key={business.name} name={business.name} />
+          </div>
         </div>
       </div>
     </div>

@@ -7,7 +7,7 @@ type SectionHeadingProps = {
   title: string;
   /** Small label above the title. */
   eyebrow?: string;
-  /** Sentence under the heading block, outside the reflective plate. */
+  /** Sentence under the heading block. */
   description?: string;
   /** Ties the section's aria-labelledby to the <h2>. */
   id?: string;
@@ -15,13 +15,12 @@ type SectionHeadingProps = {
 };
 
 /**
- * Centred section heading on a reflective plate, underlined with the same red
- * rule the header's bar items light up on hover — brand-red, blooming
- * downward — with a specular sweep travelling along it.
+ * Centred section heading underlined with the same red rule the header's bar
+ * items light up on hover — brand-red, blooming downward — with a specular
+ * sweep travelling along it.
  *
  * The plate is inline-flex so the rule is the width of the words rather than
- * the width of the page, and the reflection picks up the rule along with the
- * type.
+ * the width of the page.
  */
 export default function SectionHeading({
   title,
@@ -33,8 +32,6 @@ export default function SectionHeading({
   const first = title.slice(0, 1);
   const rest = title.slice(1);
 
-  // The heading and its mirror render the same markup, so the reflection is
-  // the type itself rather than an approximation of it.
   const words = (
     <>
       <span className="text-brand-red-lit [text-shadow:0_0_22px_rgba(255,46,67,0.5)]">
@@ -65,17 +62,6 @@ export default function SectionHeading({
           className="absolute inset-x-0 bottom-0 h-[2px] overflow-hidden rounded-full bg-gradient-to-r from-transparent via-brand-red to-transparent shadow-[0_5px_14px_-6px_rgba(140,25,37,0.95)]"
         >
           <span className="absolute inset-y-0 left-0 w-1/4 animate-rule-shine bg-gradient-to-r from-transparent via-[#ff8a95] to-transparent" />
-        </span>
-
-        {/* The echo: the same words the same way up, hung just under the rule
-            and fading downward. Not mirrored — it repeats the heading rather
-            than inverting it. Absolute, so it costs no layout height and the
-            sentence below keeps its spacing. */}
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-full mt-[3px] flex justify-center opacity-30 [mask-image:linear-gradient(#000,transparent_72%)]"
-        >
-          <span className={type}>{words}</span>
         </span>
       </div>
 

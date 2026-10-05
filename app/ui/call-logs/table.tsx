@@ -96,7 +96,7 @@ export default async function CallLogsTable({
   return (
     <div className="mt-6 flow-root overflow-x-auto md:overflow-visible">
       <div className="inline-block min-w-full align-middle">
-        <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
+        <div className="border border-white/[0.12] rounded-lg bg-gray-50 p-2 md:pt-0">
           {/* Stacked cards below md — a six-column table is unreadable on a
               phone, so the same rows are re-laid-out rather than scrolled. */}
           <div className="md:hidden">

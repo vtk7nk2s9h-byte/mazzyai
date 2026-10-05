@@ -121,6 +121,37 @@ export async function fetchCallEmails(retellCallId: string) {
   }
 }
 
+/**
+ * Every email the system has sent, oldest first: its type and when. Scoped to
+ * one organization when `organizationId` is given, every organization
+ * otherwise (the superuser's Analytics). Same AuditLog rows as above.
+ */
+export async function fetchSentEmails(organizationId?: string) {
+  try {
+    const rows = await db.orm.public.AuditLog.where(
+      organizationId
+        ? { action: 'email.sent', organizationId }
+        : { action: 'email.sent' },
+    )
+      .select('diff', 'createdAt')
+      .orderBy((a) => a.createdAt.asc())
+      .all();
+    return rows.map((r) => {
+      const type = (r.diff as { type?: string } | null)?.type ?? '';
+      return {
+        // Rows logged before the type was recorded were all follow-ups.
+        type: (EMAIL_TYPES as readonly string[]).includes(type)
+          ? (type as EmailType)
+          : ('FOLLOW_UP' as EmailType),
+        sentAt: r.createdAt,
+      };
+    });
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch sent emails.');
+  }
+}
+
 /** How many pages one organization's call log spans. */
 export async function fetchCallPages(organizationId: string) {
   try {

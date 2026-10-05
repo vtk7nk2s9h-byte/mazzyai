@@ -110,8 +110,8 @@ export async function RetellAgentsTable({
     <>
     <div className="mt-6 flow-root overflow-x-auto pb-16">
       <div className="inline-block min-w-full align-middle">
-        <div className="rounded-lg bg-gray-50 p-2">
-          <table className="min-w-full text-sm text-gray-900">
+        <div className="rounded-lg bg-gray-50 p-2 border border-white/[0.12] shadow-sm">
+          <table className="min-w-full text-sm text-gray-900 ">
             <thead className="text-left font-normal">
               <tr>
                 <th className="px-4 py-4 font-medium">Name</th>

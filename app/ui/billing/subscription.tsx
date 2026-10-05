@@ -82,7 +82,7 @@ export default function Subscription({
                 {label(s.status)}
               </span>
             </td>
-            <td className="whitespace-nowrap px-3 py-3">{s.minutesIncluded.toLocaleString()} / month</td>
+            <td className="whitespace-nowrap px-3 py-3">{s.minutesIncluded.toLocaleString('en')} / month</td>
             <td className="whitespace-nowrap px-3 py-3">
               {s.overageRateCentsPerMinute
                 ? `$${(s.overageRateCentsPerMinute / 100).toFixed(2)} / min`

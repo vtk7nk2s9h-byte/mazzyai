@@ -1,9 +1,11 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
 
 import { currentUser, hasRole } from '@/auth';
 import { fetchCall, fetchCallEmails } from '@/app/lib/call-data';
+import { fetchContactByPhone } from '@/app/lib/contact-data';
 import { fetchMyOrganizationId } from '@/app/lib/meeting-data';
 import {
   callerLabel,
@@ -16,6 +18,7 @@ import {
   CallStatusBadge,
   SentimentDot,
 } from '@/app/ui/call-logs/status';
+import SaveContact from '@/app/ui/call-logs/save-contact';
 import Breadcrumbs from '@/app/ui/invoices/breadcrumbs';
 import { Field, Section, Toggle } from '@/app/ui/organizations/field';
 import { EmailSentBadge, label } from '@/app/ui/organizations/status';
@@ -71,13 +74,20 @@ export default async function Page(props: {
   const callerEmail =
     typeof typed === 'string' && typed.includes('@') ? typed : null;
 
+  // Whether this number is already a contact, for the save/remove toggle.
+  const saved = call.fromNumber
+    ? await fetchContactByPhone(call.organizationId, call.fromNumber)
+    : null;
+  const reachLink =
+    'rounded transition-colors hover:text-brand-red-lit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400';
+
   return (
     <div className="w-full">
       <Breadcrumbs
         breadcrumbs={[
           { label: 'Call logs', href: '/dashboard/call-logs' },
           {
-            label: caller,
+            label: `${caller} call`,
             href: `/dashboard/call-logs/${call.id}`,
             active: true,
           },
@@ -140,9 +150,37 @@ export default async function Page(props: {
           </Field>
         </Section>
 
-        <Section title="Caller" description="Who was on the line.">
+        <Section
+          title={
+            <Link
+              href={`/dashboard/call-logs/${call.id}/caller`}
+              className={`group inline-flex items-center gap-1.5 ${reachLink}`}
+            >
+              Caller
+              {/* The same arrow as the table's caller, turned to point onward. */}
+              <ChevronRightIcon
+                aria-hidden="true"
+                className="w-3.5 text-gray-400 transition-colors group-hover:text-brand-red-lit"
+              />
+            </Link>
+          }
+          description="Who was on the line. Open for their details, summary and transcript."
+          action={
+            <SaveContact
+              callId={call.id}
+              saved={!!saved}
+              hasNumber={!!call.fromNumber}
+            />
+          }
+        >
           <Field label="Name">{call.callerName}</Field>
-          <Field label="From">{call.fromNumber}</Field>
+          <Field label="From">
+            {call.fromNumber && (
+              <a href={`tel:${call.fromNumber}`} className={reachLink}>
+                {call.fromNumber}
+              </a>
+            )}
+          </Field>
           <Field label="To">{call.toNumber}</Field>
           <Field label="Transferred to">{call.transferredTo}</Field>
           <Field label="Transferred at">{when(call.transferredAt)}</Field>
@@ -168,26 +206,6 @@ export default async function Page(props: {
       </div>
 
       <div className="mt-4 grid gap-4">
-        <Section title="Summary" description="Written by Retell after the call.">
-          {call.summary ? (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-600">
-              {call.summary}
-            </p>
-          ) : (
-            <p className="text-sm text-gray-400">No summary yet.</p>
-          )}
-        </Section>
-
-        <Section title="Transcript" description="Everything said on the call.">
-          {call.transcript ? (
-            <p className="max-h-96 overflow-y-auto whitespace-pre-wrap break-words rounded-md border border-white/[0.07] bg-black/20 p-4 text-sm leading-relaxed text-gray-600">
-              {call.transcript}
-            </p>
-          ) : (
-            <p className="text-sm text-gray-400">No transcript.</p>
-          )}
-        </Section>
-
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {variables.length > 0 && (
               <Section
@@ -217,7 +235,15 @@ export default async function Page(props: {
             title="Email"
             description="Track emailing"
           >
-            <Field label="Email">{callerEmail ?? 'None provided'}</Field>
+            <Field label="Email">
+              {callerEmail ? (
+                <a href={`mailto:${callerEmail}`} className={reachLink}>
+                  {callerEmail}
+                </a>
+              ) : (
+                'None provided'
+              )}
+            </Field>
             <Field label="Sent email">
               <span className="inline-flex flex-wrap items-center justify-end gap-2">
                 {emails.length > 1 && (

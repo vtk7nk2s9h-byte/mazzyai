@@ -5,11 +5,14 @@ import { notFound } from 'next/navigation';
 
 import { currentUser, hasRole } from '@/auth';
 import { fetchAgentsOrganizationId } from '@/app/lib/agent-data';
-import { fetchCalls } from '@/app/lib/call-data';
+import { fetchCalls, fetchSentEmails } from '@/app/lib/call-data';
 import { fetchOrganizationCount, MONTHLY_MINUTES } from '@/app/lib/org-data';
 import AgentCallsBar from '@/app/ui/analytics/agent-calls-bar';
 import Donut from '@/app/ui/analytics/donut';
+import EmailsBar from '@/app/ui/analytics/emails-bar';
+import RangeFilter from '@/app/ui/analytics/range-filter';
 import { lusitana } from '@/app/ui/fonts';
+import { EMAIL_TYPES, EMAIL_TYPE_LABELS } from '@/app/lib/utils';
 
 export const metadata: Metadata = {
   title: 'Analytics',
@@ -24,10 +27,29 @@ function Tile({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-/** The last six months, newest first, as "YYYY-MM" keys with a readable label. */
-function recentMonths() {
+/** How far back the page can look, in months. */
+const RANGES = [3, 6, 12] as const;
+const DEFAULT_RANGE = 6;
+
+type Params = { calls?: string; cost?: string; minutes?: string; range?: string };
+
+/**
+ * The page's URL with one choice changed and every other kept, so picking a
+ * range keeps each card's month and picking a month keeps the range.
+ */
+function hrefWith(params: Params, change: Partial<Params>) {
+  const next = new URLSearchParams();
+  for (const n of ['range', 'calls', 'cost', 'minutes'] as const) {
+    const v = n in change ? change[n] : params[n];
+    if (v) next.set(n, v);
+  }
+  return `?${next}`;
+}
+
+/** The last `count` months, newest first, as "YYYY-MM" keys with a readable label. */
+function recentMonths(count: number) {
   const now = new Date();
-  return Array.from({ length: 6 }, (_, i) => {
+  return Array.from({ length: count }, (_, i) => {
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
     return {
       key: d.toISOString().slice(0, 7),
@@ -38,7 +60,7 @@ function recentMonths() {
 
 /**
  * A card's own month picker. A <details> is the dropdown and each month is a
- * link, so the choice lives in the URL; the other card's choice is kept.
+ * link, so the choice lives in the URL; the other choices are kept.
  */
 function MonthFilter({
   name,
@@ -50,18 +72,11 @@ function MonthFilter({
   name: 'calls' | 'cost' | 'minutes';
   current?: string;
   months: { key: string; label: string }[];
-  params: { calls?: string; cost?: string; minutes?: string };
+  params: Params;
   /** Offer "All time" as an option; the minutes card has none. */
   allTime?: boolean;
 }) {
-  const href = (key?: string) => {
-    const next = new URLSearchParams();
-    for (const n of ['calls', 'cost', 'minutes'] as const) {
-      const v = n === name ? key : params[n];
-      if (v) next.set(n, v);
-    }
-    return `?${next}`;
-  };
+  const href = (key?: string) => hrefWith(params, { [name]: key });
   const options = allTime ? [{ key: undefined, label: 'All time' }, ...months] : months;
   return (
     // Keyed on the choice, so the list closes once a month is picked.
@@ -90,10 +105,13 @@ function MonthFilter({
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export default async function Page(props: {
-  searchParams?: Promise<{ calls?: string; cost?: string; minutes?: string }>;
+  searchParams?: Promise<Params>;
 }) {
-  const months = recentMonths();
   const params = (await props.searchParams) ?? {};
+  const range =
+    RANGES.find((n) => String(n) === params.range) ?? DEFAULT_RANGE;
+  const months = recentMonths(range);
+  const period = `last ${range} months`;
   const pick = (asked?: string) => months.find((m) => m.key === asked)?.key;
   const callsMonth = pick(params.calls);
   const costMonth = pick(params.cost);
@@ -115,9 +133,10 @@ export default async function Page(props: {
 
   // Totals are computed over the whole list, fine at this size; push them into
   // aggregate queries if the call table grows past it.
-  const [allCalls, orgCount] = await Promise.all([
+  const [allCalls, orgCount, emails] = await Promise.all([
     fetchCalls({ organizationId }),
     fetchOrganizationCount(organizationId),
+    fetchSentEmails(organizationId),
   ]);
   // Each card filters on its own month. Minutes are the organization's running
   // balance, not a per-month figure, so that card has no filter. The tiles
@@ -161,8 +180,8 @@ export default async function Page(props: {
   const used = Math.min(usedMinutes, included);
   const money = (n: number) => `$${n.toFixed(2)}`;
 
-  // Calls per agent for each of the last six months (oldest first), for the
-  // top five agents by volume over that window.
+  // Calls per agent for each month of the range (oldest first), for the top
+  // five agents by volume over that window.
   const chartMonths = [...months].reverse();
   const perAgent = new Map<string, Map<string, number>>();
   for (const c of allCalls) {
@@ -183,9 +202,35 @@ export default async function Page(props: {
     ...Object.fromEntries(topAgents.map(([, byMonth], i) => [`a${i}`, byMonth.get(m.key) ?? 0])),
   }));
 
+  // Emails sent in each of the same months (oldest first), by type.
+  const emailMonthRows = chartMonths.map((m) => {
+    const inThisMonth = emails.filter((e) => e.sentAt.slice(0, 7) === m.key);
+    return {
+      month: m.label,
+      total: inThisMonth.length,
+      ...Object.fromEntries(
+        EMAIL_TYPES.map((type, i) => [
+          `t${i}`,
+          inThisMonth.filter((e) => e.type === type).length,
+        ]),
+      ),
+    };
+  });
+
   return (
     <div className="w-full">
-      <h1 className={`${lusitana.className} mb-4 text-2xl`}>Analytics</h1>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h1 className={`${lusitana.className} text-2xl`}>Analytics</h1>
+        <RangeFilter
+          ranges={RANGES}
+          current={range}
+          hrefs={RANGES.map((n) =>
+            hrefWith(params, {
+              range: n === DEFAULT_RANGE ? undefined : String(n),
+            }),
+          )}
+        />
+      </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Tile label="Total calls" value={calls.length} />
         <Tile
@@ -201,7 +246,7 @@ export default async function Page(props: {
           title="Total calls"
           description="By call status"
           slices={byStatus}
-          center={callsShown.length.toLocaleString()}
+          center={callsShown.length.toLocaleString('en')}
           centerLabel="calls"
           filter={
             <MonthFilter name="calls" current={callsMonth} months={months} params={params} />
@@ -214,7 +259,7 @@ export default async function Page(props: {
             { name: 'Used', value: used },
             { name: 'Remaining', value: included - used },
           ]}
-          center={`${usedMinutes.toLocaleString()} / ${included.toLocaleString()}`}
+          center={`${usedMinutes.toLocaleString('en')} / ${included.toLocaleString('en')}`}
           filter={
             <MonthFilter name="minutes" current={minutesMonth} months={months} params={params} allTime={false} />
           }
@@ -237,9 +282,20 @@ export default async function Page(props: {
       <div className="mt-3">
         <AgentCallsBar
           title="Calls per agent"
-          description="Last six months, top five agents"
+          description={`${capitalize(period)}, top five agents`}
           agents={agentNames}
           data={agentMonthRows}
+        />
+      </div>
+
+      {/* Half the width of the chart above: the other column is free. */}
+      <div className="mt-3 grid gap-3 lg:grid-cols-2">
+        <EmailsBar
+          title="Emails sent"
+          description={`${capitalize(period)}, by type`}
+          period={period}
+          types={EMAIL_TYPES.map((t) => EMAIL_TYPE_LABELS[t])}
+          data={emailMonthRows}
         />
       </div>
     </div>

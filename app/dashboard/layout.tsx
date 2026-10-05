@@ -1,11 +1,15 @@
+import { currentUser } from '@/auth';
 import SideNav from '@/app/ui/dashboard/sidenav';
+import VoiceAgentWidget from '@/components/ui/voice-agent-widget';
 import { Metadata } from 'next';
  
 export const metadata: Metadata = {
   title: 'Dashboard',
 };
  
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default async function Layout({ children }: { children: React.ReactNode }) {
+  // The widget knows who is calling, so it doesn't ask for a name and email.
+  const me = await currentUser();
   return (
     // One scroller: the document's. This used to be an h-screen shell with
     // `overflow-hidden` and a `overflow-y-auto` content pane inside it, which
@@ -37,6 +41,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           horizontal scrollbar on the document. The tables scroll sideways
           inside their own wrapper instead. */}
       <div className="min-w-0 grow p-6 md:p-12">{children}</div>
+      <VoiceAgentWidget
+        caller={
+          me ? { name: me.name ?? '', email: me.email ?? '' } : undefined
+        }
+      />
     </div>
   );
 }

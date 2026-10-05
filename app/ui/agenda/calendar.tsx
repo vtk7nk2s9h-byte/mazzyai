@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
+import { UserIcon } from '@heroicons/react/16/solid';
 import moment from 'moment';
 import {
   Calendar,
@@ -64,7 +65,19 @@ const input =
   'block w-full rounded-md border border-gray-200 bg-transparent px-3 py-[9px] text-sm outline-2 placeholder:text-gray-500';
 const label = 'mb-1.5 block text-xs font-medium text-gray-900';
 const dialogClass =
-  'w-[min(92vw,26rem)] rounded-lg border border-white/[0.07] bg-[#140a0d]/80 p-0 text-gray-900 backdrop-blur-xl backdrop:bg-black/40 backdrop:backdrop-blur-sm';
+  'w-[min(92vw,26rem)] rounded-lg border border-brand-red-lit/10 bg-[#140a0d]/80 p-0 text-gray-900 backdrop-blur-xl backdrop:bg-black/40 backdrop:backdrop-blur-sm';
+
+const personIcon = 'h-3.5 w-3.5 shrink-0 text-red-500';
+
+/** A calendar cell's meeting: a small red person, then the title. */
+function EventCell({ title }: { title: string }) {
+  return (
+    <span className="flex items-center gap-1">
+      <UserIcon className={personIcon} aria-hidden />
+      <span className="truncate">{title}</span>
+    </span>
+  );
+}
 
 /** Next full hour, for an hour — where "Create event" starts. */
 function defaultDraft(): Draft {
@@ -274,7 +287,7 @@ export default function AgendaCalendar({
   return (
     <>
       <div className="mb-4 flex items-center justify-between gap-3">
-        {heading ?? <span />}
+        <div>{heading}</div>
         <button
           type="button"
           onClick={() => openForm(defaultDraft())}
@@ -299,6 +312,7 @@ export default function AgendaCalendar({
           date={date}
           onNavigate={setDate}
           popup
+          components={{ event: EventCell }}
           selectable
           onSelectEvent={openDetails}
           onSelectSlot={onSelectSlot}
@@ -339,7 +353,10 @@ ${event.agent ? `Booked by ${event.agent.name}` : 'Added manually'}`
                   className="flex w-full items-center justify-between gap-4 py-2 text-left text-sm hover:text-brand-red-lit focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-red-lit"
                 >
                   <span className="min-w-0">
-                    <span className="block truncate font-medium">{event.title}</span>
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <UserIcon className={personIcon} aria-hidden />
+                      <span className="truncate">{event.title}</span>
+                    </span>
                     <span className="block text-xs text-gray-500">
                       {event.allDay
                         ? `${event.start.toLocaleDateString(undefined, { dateStyle: 'medium' })} · all day`

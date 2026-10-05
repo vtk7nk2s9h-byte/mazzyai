@@ -1,6 +1,7 @@
 'use client';
 import {
   UserGroupIcon,
+  UsersIcon,
   HomeIcon,
   BuildingOffice2Icon,
   DocumentDuplicateIcon,
@@ -31,6 +32,7 @@ const links = [
     icon: PhoneArrowDownLeftIcon,
   },
   { name: 'Agenda', href: '/dashboard/agenda', icon: CalendarDaysIcon },
+  { name: 'Contacts', href: '/dashboard/contacts', icon: UsersIcon },
 ];
 
 // Superusers see every agent; an organization admin sees their own. The page
@@ -85,6 +87,7 @@ const superuserHides = [
   '/dashboard/invoices',
   '/dashboard/call-logs',
   '/dashboard/agenda',
+  '/dashboard/contacts',
 ];
 
 type NavLink = { name: string; href: string; icon: typeof HomeIcon };

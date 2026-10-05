@@ -11,7 +11,8 @@ export function Section({
   titleAction,
   children,
 }: {
-  title: string;
+  /** A string, or a link when the title leads somewhere. */
+  title: React.ReactNode;
   description?: string;
   /** Sits at the right of the header, e.g. an edit button. */
   action?: React.ReactNode;

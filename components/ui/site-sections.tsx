@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 
 import CardSection, { type CardItem } from '@/components/ui/glass-card';
-import UseCaseExplorer from '@/components/ui/use-case-explorer';
 
 // Placeholder copy throughout — the shape is right, the words are yours.
 
@@ -98,15 +97,16 @@ export function FeaturesSection() {
 
 export function UseCasesSection() {
   return (
+    // No heading: "Use cases" now sits above the explorer in the globe's last
+    // chapter, and these cards follow it.
+    // Pulled up under the "Hear it live" card, with wider gaps between cards.
     <CardSection
       id="use-cases"
-      eyebrow="Who it is for"
-      title="Use cases"
-      description="Explore different use cases tailored to your business."
       items={useCases}
-    >
-      <UseCaseExplorer />
-    </CardSection>
+      className="-mt-12 max-w-none pt-0 md:px-16"
+      gridClassName="gap-8 md:gap-12"
+      compact
+    />
   );
 }
 

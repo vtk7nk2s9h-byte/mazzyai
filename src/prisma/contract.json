@@ -36,6 +36,10 @@
       "model": "CallTranscriptLine",
       "namespace": "public"
     },
+    "contact": {
+      "model": "Contact",
+      "namespace": "public"
+    },
     "demoCall": {
       "model": "DemoCall",
       "namespace": "public"
@@ -2067,6 +2071,124 @@
               "table": "callTranscriptLine"
             }
           },
+          "Contact": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "email": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "notes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "organizationId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "phone": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "sourceCallId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "organization": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "organizationId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Organization",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "email": {
+                  "column": "email"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "notes": {
+                  "column": "notes"
+                },
+                "organizationId": {
+                  "column": "organizationId"
+                },
+                "phone": {
+                  "column": "phone"
+                },
+                "sourceCallId": {
+                  "column": "sourceCallId"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "contact"
+            }
+          },
           "DemoCall": {
             "fields": {
               "costCents": {
@@ -3926,6 +4048,21 @@
                 },
                 "to": {
                   "model": "Call",
+                  "namespace": "public"
+                }
+              },
+              "contacts": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "organizationId"
+                  ]
+                },
+                "to": {
+                  "model": "Contact",
                   "namespace": "public"
                 }
               },
@@ -6727,6 +6864,110 @@
               },
               "uniques": []
             },
+            "contact": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "email": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "notes": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "organizationId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "phone": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "sourceCallId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "organizationId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "contact"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "organization"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "organizationId",
+                    "createdAt"
+                  ],
+                  "name": "contact_organizationId_createdAt_idx_c52d1cc3",
+                  "prefix": "contact_organizationId_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "organizationId"
+                  ],
+                  "name": "contact_organizationId_idx_2e17ef41",
+                  "prefix": "contact_organizationId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "organizationId",
+                    "phone"
+                  ]
+                }
+              ]
+            },
             "demoCall": {
               "checks": [
                 {
@@ -9513,10 +9754,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "f7f0cd2e8ad3dc269310724f1842df53bab9b33243309a2f007e52410d16aa2a"
+    "storageHash": "a6cc25460b34ae08e1d9ef21abf5d45f7e838922341a1e0ef5f4570bac230367"
   },
   "execution": {
-    "executionHash": "a08f3a2501257b742a37a05ac319b98fab361082dff7c2c0a70ddb42c86e127c",
+    "executionHash": "210d8da988fae317a544a53bb339a3f26890e7a16a7832167fe38b4d8d5a2c2e",
     "mutations": {
       "defaults": [
         {
@@ -9620,6 +9861,32 @@
             "column": "id",
             "namespace": "public",
             "table": "callTranscriptLine"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "contact"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "contact"
           }
         },
         {

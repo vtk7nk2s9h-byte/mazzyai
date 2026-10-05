@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Loader2, Mic, MicOff, PhoneCall, PhoneOff } from 'lucide-react';
+import { Loader2, MessageSquare, Mic, MicOff, PhoneCall, PhoneOff } from 'lucide-react';
 import type {
   LiveCallUtterance,
   SessionStatus,
@@ -10,6 +10,7 @@ import type {
 } from 'retell-client-js-sdk';
 
 import { cn } from "@/app/lib/utils.ts"
+import { Orb, type AgentState } from '@/components/ui/orb';
 
 // A Retell *public* key (public_key_...), not an API key. It is domain-locked
 // in the Retell dashboard and may only open web calls, which is why it is safe
@@ -65,6 +66,16 @@ async function getRecaptchaToken(siteKey: string): Promise<string> {
   return grecaptcha.execute(siteKey, { action: 'retell_web_call' });
 }
 
+const FORM_ID = 'voice-assistant-form';
+
+// The lit look of the idle-state buttons: the phone (start) and the message one.
+const litButton =
+  'border-brand-red-lit/60 bg-maroon-500/30 text-brand-red-lit shadow-[0_0_14px_rgba(255,46,67,0.3)] hover:border-brand-red-lit hover:bg-brand-red-lit hover:text-white hover:shadow-[0_0_20px_rgba(255,46,67,0.7)] focus-visible:ring-brand-red-lit';
+
+// The panel's round controls: small, glassy, lit in the system red.
+const roundButton =
+  'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-[color,background-color,border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2';
+
 type Line = { id: string; role: 'agent' | 'user'; content: string };
 
 /**
@@ -100,25 +111,67 @@ const STATUS_LABEL: Record<SessionStatus, string> = {
   ended: 'Call ended',
 };
 
-export default function VoiceAgentWidget() {
+/**
+ * `caller` is who is on the line when that is already known — the signed-in
+ * user in the dashboard — so the name and email fields are left out and these
+ * are sent instead. Without it (the public site) the visitor can type them.
+ */
+export default function VoiceAgentWidget({
+  caller: knownCaller,
+}: {
+  caller?: { name: string; email: string };
+} = {}) {
   const [status, setStatus] = useState<SessionStatus | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [muted, setMuted] = useState(false);
+  // Whether the agent is speaking right now, from the call's own events.
+  const [agentTalking, setAgentTalking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // The session is imperative and must survive re-renders without causing
   // them, so it lives in a ref rather than in state.
   const sessionRef = useRef<WebCallSession | null>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
 
   const active = status !== null && status !== 'ended';
+
+  // What the orb shows: idle until a call, a "thinking" swirl while it connects,
+  // then listening, switching to talking while the agent speaks.
+  const orbState: AgentState =
+    status === 'connecting'
+      ? 'thinking'
+      : active
+        ? agentTalking
+          ? 'talking'
+          : 'listening'
+        : null;
 
   const endCall = useCallback(async () => {
     const session = sessionRef.current;
     sessionRef.current = null;
     setMuted(false);
+    setAgentTalking(false);
     // Already gone is a fine outcome — the agent may have hung up first.
     await session?.end().catch(() => {});
+  }, []);
+
+  // Closing is a click anywhere outside the panel, or Escape. Closing ends a
+  // call in progress (onToggle below), the same as the old Close button did.
+  useEffect(() => {
+    const close = (e: Event) => {
+      const el = detailsRef.current;
+      if (!el?.open) return;
+      if (e.type === 'keydown' && (e as KeyboardEvent).key !== 'Escape') return;
+      if (e.type === 'pointerdown' && el.contains(e.target as Node)) return;
+      el.open = false;
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', close);
+    };
   }, []);
 
   // A live microphone must not outlive the page.
@@ -165,12 +218,16 @@ export default function VoiceAgentWidget() {
         hooks: {
           onStatus: setStatus,
           onTranscript: (utterances) => setLines(toLines(utterances)),
+          onAgentStartTalking: () => setAgentTalking(true),
+          onAgentStopTalking: () => setAgentTalking(false),
           onEnd: () => {
             sessionRef.current = null;
             setMuted(false);
+            setAgentTalking(false);
           },
           onError: (err) => {
             sessionRef.current = null;
+            setAgentTalking(false);
             setStatus(null);
             setError(err.message);
           },
@@ -195,13 +252,20 @@ export default function VoiceAgentWidget() {
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      if (knownCaller) {
+        void startCall({
+          name: sanitize(knownCaller.name, 80),
+          email: sanitize(knownCaller.email, 120),
+        });
+        return;
+      }
       const fields = new FormData(event.currentTarget);
       void startCall({
         name: sanitize(fields.get('caller_name'), 80),
         email: sanitize(fields.get('caller_email'), 120),
       });
     },
-    [startCall],
+    [startCall, knownCaller],
   );
 
   const toggleMute = useCallback(() => {
@@ -225,7 +289,13 @@ export default function VoiceAgentWidget() {
     // content inconsistently across browsers, so the panel is positioned
     // against it instead, which is why it can sit above the summary despite
     // following it in the DOM.
+    //
+    // Open, the button gives way to the panel, which takes its place; the
+    // panel closes on a click anywhere outside it, or Escape (see below).
     <details
+      ref={detailsRef}
+      // The intro's "Talk to our agent" button opens the widget by this id.
+      id="voice-assistant"
       className="group fixed bottom-6 right-6 z-50"
       onToggle={(e) => {
         if (!e.currentTarget.open) void endCall();
@@ -233,44 +303,94 @@ export default function VoiceAgentWidget() {
     >
       <summary
         className={cn(
-          'flex cursor-pointer list-none items-center gap-2.5 rounded-full border border-white/10',
-          'bg-ink-800/80 py-3 pl-4 pr-5 text-sm font-medium text-gray-900',
+          'flex cursor-pointer list-none items-center gap-2.5 rounded-full border border-white/[0.07] group-open:hidden',
+          'bg-white/[0.035] py-3 pl-4 pr-5 text-sm font-medium text-gray-900',
           'shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl',
-          'transition-colors hover:border-maroon-400/50',
+          'transition-colors hover:border-white/[0.12]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400',
           '[&::-webkit-details-marker]:hidden',
         )}
       >
-        <span
-          className={cn(
-            'inline-flex h-8 w-8 items-center justify-center rounded-full bg-maroon-500 text-white',
-            active && 'animate-pulse',
-          )}
-        >
-          <PhoneCall className="h-4 w-4" strokeWidth={1.75} />
+        {/* The agent itself, small: it follows the call even with the panel
+            closed. */}
+        <span className="inline-flex h-8 w-8 overflow-hidden rounded-full border border-white/10 bg-black/30">
+          <Orb colors={['#ff6b78', '#8c1925']} seed={1000} agentState={orbState} />
         </span>
-        <span className="group-open:hidden">Talk to us</span>
-        <span className="hidden group-open:inline">Close</span>
+        Talk to us
       </summary>
 
-      <div className="absolute bottom-full right-0 mb-3 w-[min(22rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.035] shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl">
+      <div className="absolute bottom-0 right-0 w-[min(22rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.035] shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl">
         <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
-          <div>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-black/30">
+              <Orb colors={['#ff6b78', '#8c1925']} seed={2000} agentState={orbState} />
+            </span>
+            <div>
             <p className="text-sm font-semibold tracking-tight text-gray-900">
               Voice assistant
             </p>
             <p className="mt-0.5 text-xs text-gray-500">
               {error ?? (status ? STATUS_LABEL[status] : 'Ready when you are')}
             </p>
+            </div>
           </div>
-          {status === 'connecting' ? (
-            <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-          ) : null}
+          <div className="flex shrink-0 items-center gap-2">
+            {status === 'connecting' ? (
+              <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+            ) : null}
+            {active ? (
+              <>
+                <button
+                  type="button"
+                  onClick={toggleMute}
+                  aria-pressed={muted}
+                  className={cn(roundButton, 'border-white/10 bg-white/[0.06] text-gray-600 hover:border-white/25 hover:text-gray-900 focus-visible:ring-maroon-400')}
+                >
+                  {muted ? (
+                    <MicOff className="h-4 w-4" strokeWidth={1.75} />
+                  ) : (
+                    <Mic className="h-4 w-4" strokeWidth={1.75} />
+                  )}
+                  <span className="sr-only">
+                    {muted ? 'Unmute microphone' : 'Mute microphone'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void endCall()}
+                  className={cn(roundButton, 'border-brand-red-lit bg-brand-red-lit text-white shadow-[0_0_14px_rgba(255,46,67,0.55)] hover:shadow-[0_0_20px_rgba(255,46,67,0.8)] focus-visible:ring-brand-red-lit')}
+                >
+                  <PhoneOff className="h-4 w-4" strokeWidth={1.75} />
+                  <span className="sr-only">End call</span>
+                </button>
+              </>
+            ) : (
+              // Outside the <form>, so it names it: Enter in a field and this
+              // button both submit the same one.
+              <>
+                {/* Placeholder: nothing behind it yet. */}
+                <button type="button" className={cn(roundButton, litButton)}>
+                  <MessageSquare className="h-4 w-4" strokeWidth={1.75} />
+                  <span className="sr-only">Message</span>
+                </button>
+                <button
+                  type="submit"
+                  form={FORM_ID}
+                  className={cn(roundButton, litButton)}
+                >
+                  <PhoneCall className="h-4 w-4" strokeWidth={1.75} />
+                  <span className="sr-only">
+                    {status === 'ended' ? 'Call again' : 'Start call'}
+                  </span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* A real <form>, so Enter in either field starts the call and the
             browser handles the email format check itself. */}
-        <form onSubmit={handleSubmit}>
+        <form id={FORM_ID} onSubmit={handleSubmit}>
           {lines.length > 0 ? (
             <div
               ref={transcriptRef}
@@ -300,7 +420,12 @@ export default function VoiceAgentWidget() {
 
           {/* Kept mounted through the call rather than unmounted — the values
               survive, so ending and calling again does not mean retyping. */}
-          <div className={cn('gap-2 px-5 pb-4', active ? 'hidden' : 'grid')}>
+          <div
+            className={cn(
+              'gap-2 px-5 pb-4',
+              active || knownCaller ? 'hidden' : 'grid',
+            )}
+          >
             <label htmlFor="retell-caller-name" className="sr-only">
               Your name
             </label>
@@ -328,44 +453,6 @@ export default function VoiceAgentWidget() {
             <p className="text-[11px] leading-snug text-gray-400">
               Optional — both just let Jaroen know who he is talking to.
             </p>
-          </div>
-
-          <div className="flex gap-2 border-t border-white/[0.07] px-5 py-4">
-            {active ? (
-              <>
-                <button
-                  type="button"
-                  onClick={toggleMute}
-                  aria-pressed={muted}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-gray-600 transition-colors hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400"
-                >
-                  {muted ? (
-                    <MicOff className="h-4 w-4" strokeWidth={1.75} />
-                  ) : (
-                    <Mic className="h-4 w-4" strokeWidth={1.75} />
-                  )}
-                  <span className="sr-only">
-                    {muted ? 'Unmute microphone' : 'Mute microphone'}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void endCall()}
-                  className="inline-flex h-10 grow items-center justify-center gap-2 rounded-xl bg-maroon-500 text-sm font-medium text-white transition-colors hover:bg-maroon-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400"
-                >
-                  <PhoneOff className="h-4 w-4" strokeWidth={1.75} />
-                  End call
-                </button>
-              </>
-            ) : (
-              <button
-                type="submit"
-                className="inline-flex h-10 grow items-center justify-center gap-2 rounded-xl bg-maroon-500 text-sm font-medium text-white transition-colors hover:bg-maroon-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400"
-              >
-                <PhoneCall className="h-4 w-4" strokeWidth={1.75} />
-                {status === 'ended' ? 'Call again' : 'Start call'}
-              </button>
-            )}
           </div>
         </form>
 
