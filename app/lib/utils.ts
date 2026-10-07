@@ -1,4 +1,3 @@
-import { Revenue } from './definitions';
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -47,20 +46,6 @@ export const formatDateToLocal = (
   };
   const formatter = new Intl.DateTimeFormat(locale, options);
   return formatter.format(date);
-};
-
-export const generateYAxis = (revenue: Revenue[]) => {
-  // Calculate what labels we need to display on the y-axis
-  // based on highest record and in 1000s
-  const yAxisLabels = [];
-  const highestRecord = Math.max(...revenue.map((month) => month.revenue));
-  const topLabel = Math.ceil(highestRecord / 1000) * 1000;
-
-  for (let i = topLabel; i >= 0; i -= 1000) {
-    yAxisLabels.push(`$${i / 1000}K`);
-  }
-
-  return { yAxisLabels, topLabel };
 };
 
 export const generatePagination = (currentPage: number, totalPages: number) => {
@@ -120,6 +105,10 @@ export const EMAIL_TYPE_LABELS: Record<EmailType, string> = {
 /** The contract's SystemRole members, least to most privileged. */
 export const USER_ROLES = ['USER', 'ADMIN', 'SUPERUSER'] as const;
 export type UserRole = (typeof USER_ROLES)[number];
+
+/** The contract's UserStatus members. DISABLED blocks sign-in (lib/auth.ts). */
+export const USER_STATUSES = ['ACTIVE', 'DISABLED'] as const;
+export type UserStatus = (typeof USER_STATUSES)[number];
 
 /** Rows every table shows per page. */
 export const PAGE_SIZE = 7;

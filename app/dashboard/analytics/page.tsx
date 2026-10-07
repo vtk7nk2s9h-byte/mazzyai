@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 function Tile({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-lg border border-white/[0.07] bg-white/[0.05] p-4 backdrop-blur-xl">
+    <div className="rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-4 backdrop-blur-xl">
       <p className="text-xs text-gray-500">{label}</p>
       <p className={`${lusitana.className} mt-1 text-2xl`}>{value}</p>
     </div>

@@ -1,5 +1,24 @@
-## Next.js App Router Course - Starter
+# MazzyAI
 
-This is the starter template for the Next.js App Router Course. It contains the starting code for the dashboard application.
+AI voice agents for businesses: Retell-powered phone agents, call logs,
+agenda, contacts and analytics, with a superuser console for running every
+organization.
 
-For more information, see the [course curriculum](https://nextjs.org/learn) on the Next.js Website.
+## Stack
+
+- Next.js (App Router) — see `AGENTS.md` before writing code; this version
+  differs from older docs.
+- Prisma 8 (contract-first) on Postgres — `src/prisma/contract.prisma`.
+- Better Auth — `lib/auth.ts`.
+- Retell (voice), Resend (email), Tailwind.
+
+## Local development
+
+```bash
+pnpm install
+cp .env.example .env          # then fill in the values
+docker compose up -d          # Postgres on localhost:5433
+pnpm prisma db update         # apply the contract
+pnpm db:seed                  # demo data; logins in src/prisma/seed.ts
+pnpm dev
+```

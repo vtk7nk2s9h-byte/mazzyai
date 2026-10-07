@@ -1,35 +1,34 @@
 import {
-  BanknotesIcon,
-  ClockIcon,
-  UserGroupIcon,
-  InboxIcon,
+  CalendarDaysIcon,
+  CpuChipIcon,
+  PhoneIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 import { lusitana } from '@/app/ui/fonts';
-import { fetchCardData } from '@/app/lib/data';
+import { fetchOverviewStats } from '@/app/lib/org-data';
 
 const iconMap = {
-  collected: BanknotesIcon,
-  customers: UserGroupIcon,
-  pending: ClockIcon,
-  invoices: InboxIcon,
+  calls: PhoneIcon,
+  agents: CpuChipIcon,
+  contacts: UsersIcon,
+  meetings: CalendarDaysIcon,
 };
 
-export default async function CardWrapper() {
-  const { numberOfCustomers,
-      numberOfInvoices,
-      totalPaidInvoices,
-      totalPendingInvoices } = await fetchCardData();
+/** The dashboard home's stat row: one organization, or all of them. */
+export default async function CardWrapper({
+  organizationId,
+}: {
+  organizationId?: string;
+}) {
+  const { callsThisMonth, agents, contacts, upcomingMeetings } =
+    await fetchOverviewStats(organizationId);
 
   return (
     <>
-      <Card title="Collected" value={totalPaidInvoices} type="collected" />
-      <Card title="Pending" value={totalPendingInvoices} type="pending" />
-      <Card title="Total Invoices" value={numberOfInvoices} type="invoices" />
-      <Card
-        title="Total Customers"
-        value={numberOfCustomers}
-        type="customers"
-      />
+      <Card title="Calls this month" value={callsThisMonth} type="calls" />
+      <Card title="Agents" value={agents} type="agents" />
+      <Card title="Contacts" value={contacts} type="contacts" />
+      <Card title="Upcoming meetings" value={upcomingMeetings} type="meetings" />
     </>
   );
 }
@@ -41,7 +40,7 @@ export function Card({
 }: {
   title: string;
   value: number | string;
-  type: 'invoices' | 'customers' | 'pending' | 'collected';
+  type: keyof typeof iconMap;
 }) {
   const Icon = iconMap[type];
 

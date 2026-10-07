@@ -347,12 +347,37 @@ function meetingsFor(today: Date) {
   );
 }
 
+// Better Auth keeps a password on the user's "credential" Account row
+// (accountId = the user's id), so that's what the seed writes. bcrypt at cost
+// 10 rather than lib/auth.ts's 12, to keep seeding quick — verification reads
+// the cost from the hash, so both work.
+async function setPassword(email: string, password: string) {
+  const user = await db.orm.public.User.where({ email }).select('id').first();
+  if (!user) throw new Error(`setPassword: no user ${email}`);
+  const hash = await bcrypt.hash(password, 10);
+  const credential = await db.orm.public.Account.where({
+    userId: user.id,
+    providerId: 'credential',
+  })
+    .select('id')
+    .first();
+  if (credential) {
+    await db.orm.public.Account.where({ id: credential.id }).update({
+      password: hash,
+    });
+  } else {
+    await db.orm.public.Account.create({
+      userId: user.id,
+      providerId: 'credential',
+      accountId: user.id,
+      password: hash,
+    });
+  }
+}
+
 async function main() {
-  // auth.ts looks the account up by lowercased email and compares against
-  // passwordHash, so the seed writes exactly what Credentials sign-in reads.
   // The internal account is SUPERUSER — the contract's "full internal admin".
   for (const staff of [SUPERUSER]) {
-    const passwordHash = await bcrypt.hash(staff.password, 10);
     const existing = await db.orm.public.User.where({ email: staff.email })
       .select('id')
       .first();
@@ -361,7 +386,6 @@ async function main() {
       // Re-running resets the password and re-asserts the role, so a demoted or
       // locked-out dev account comes back without a manual SQL fix.
       await db.orm.public.User.where({ id: existing.id }).update({
-        passwordHash,
         systemRole: 'SUPERUSER',
         status: 'ACTIVE',
       });
@@ -370,12 +394,13 @@ async function main() {
       await db.orm.public.User.create({
         email: staff.email,
         name: staff.name,
-        passwordHash,
+        emailVerified: true,
         systemRole: 'SUPERUSER',
         status: 'ACTIVE',
       });
       console.log('created superuser:', staff.email);
     }
+    await setPassword(staff.email, staff.password);
   }
 
   let org = await db.orm.public.Organization.where({ slug: ORG_SLUG })
@@ -609,7 +634,6 @@ async function main() {
   console.log(`invoices created: ${invoicesCreated}`);
 
   // A tenant login for first-org, owner of it.
-  const memberHash = await bcrypt.hash(MEMBER.password, 10);
   let member = await db.orm.public.User.where({ email: MEMBER.email })
     .select('id')
     .first();
@@ -617,12 +641,13 @@ async function main() {
     await db.orm.public.User.create({
       email: MEMBER.email,
       name: MEMBER.name,
-      passwordHash: memberHash,
+      emailVerified: true,
       status: 'ACTIVE',
     });
     member = await db.orm.public.User.where({ email: MEMBER.email })
       .select('id')
       .first();
+    await setPassword(MEMBER.email, MEMBER.password);
     console.log('created tenant user:', MEMBER.email);
   }
   const membership = await db.orm.public.Membership.where({
@@ -663,13 +688,11 @@ async function main() {
     console.log('created organization: MazzyAI');
   }
 
-  const adminHash = await bcrypt.hash(ORG_ADMIN.password, 10);
   let orgAdmin = await db.orm.public.User.where({ email: ORG_ADMIN.email })
     .select('id')
     .first();
   if (orgAdmin) {
     await db.orm.public.User.where({ id: orgAdmin.id }).update({
-      passwordHash: adminHash,
       systemRole: 'ADMIN',
       status: 'ACTIVE',
     });
@@ -678,7 +701,7 @@ async function main() {
     await db.orm.public.User.create({
       email: ORG_ADMIN.email,
       name: ORG_ADMIN.name,
-      passwordHash: adminHash,
+      emailVerified: true,
       systemRole: 'ADMIN',
       status: 'ACTIVE',
     });
@@ -687,6 +710,7 @@ async function main() {
       .first();
     console.log('created org admin:', ORG_ADMIN.email);
   }
+  await setPassword(ORG_ADMIN.email, ORG_ADMIN.password);
   const adminMembership = await db.orm.public.Membership.where({
     userId: orgAdmin!.id,
     organizationId: adminOrg!.id,

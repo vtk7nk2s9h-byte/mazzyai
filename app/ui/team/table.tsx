@@ -1,10 +1,14 @@
 import { currentUser } from '@/auth';
 import { fetchUsers } from '@/app/lib/user-data';
 import { formatDateToLocal, paginate } from '@/app/lib/utils';
-import Pagination from '@/app/ui/invoices/pagination';
+import Pagination from '@/app/ui/pagination';
 import OrgAvatar from '@/app/ui/organizations/avatar';
 import { UserRoleBadge, UserStatusBadge } from '@/app/ui/organizations/status';
-import RoleSelect from '@/app/ui/team/role-select';
+import {
+  RoleSelect,
+  SignOutEverywhereButton,
+  StatusSelect,
+} from '@/app/ui/team/user-controls';
 
 /**
  * Every system user with their role. Server-rendered end to end, laid out like
@@ -15,13 +19,25 @@ export default async function TeamTable({ page = 1 }: { page?: number }) {
   const { rows: users, totalPages } = paginate(await fetchUsers(), page);
   const me = await currentUser();
 
-  // Your own row stays a plain badge: the action refuses a self-change, so
-  // offering the picker would only lead to an error.
+  // Your own row stays plain badges: the actions refuse a self-change, so
+  // offering the controls would only lead to an error.
   const roleCell = (user: (typeof users)[number]) =>
     user.id === me?.id ? (
       <UserRoleBadge role={user.systemRole} />
     ) : (
       <RoleSelect userId={user.id} role={user.systemRole} />
+    );
+  const statusCell = (user: (typeof users)[number]) =>
+    user.id === me?.id ? (
+      <UserStatusBadge status={user.status} />
+    ) : (
+      <div className="flex items-center gap-1">
+        <StatusSelect userId={user.id} status={user.status} />
+        <SignOutEverywhereButton
+          userId={user.id}
+          name={user.name ?? user.email}
+        />
+      </div>
     );
 
   if (users.length === 0) {
@@ -64,7 +80,7 @@ export default async function TeamTable({ page = 1 }: { page?: number }) {
                   <p className="text-sm text-gray-500">
                     Joined {formatDateToLocal(user.createdAt)}
                   </p>
-                  <UserStatusBadge status={user.status} />
+                  {statusCell(user)}
                 </div>
               </div>
             ))}
@@ -124,7 +140,7 @@ export default async function TeamTable({ page = 1 }: { page?: number }) {
                       : 'Never'}
                   </td>
                   <td className="whitespace-nowrap px-3 py-3">
-                    <UserStatusBadge status={user.status} />
+                    {statusCell(user)}
                   </td>
                 </tr>
               ))}

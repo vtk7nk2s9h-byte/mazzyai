@@ -92,6 +92,10 @@
       "model": "PhoneNumber",
       "namespace": "public"
     },
+    "rateLimit": {
+      "model": "RateLimit",
+      "namespace": "public"
+    },
     "sectorTemplate": {
       "model": "SectorTemplate",
       "namespace": "public"
@@ -116,8 +120,8 @@
       "model": "User",
       "namespace": "public"
     },
-    "verificationToken": {
-      "model": "VerificationToken",
+    "verification": {
+      "model": "Verification",
       "namespace": "public"
     },
     "webhookEvent": {
@@ -619,10 +623,24 @@
                   "kind": "scalar"
                 }
               },
-              "expiresAt": {
+              "accessTokenExpiresAt": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/int4@1",
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "accountId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
                 }
               },
@@ -640,14 +658,14 @@
                   "kind": "scalar"
                 }
               },
-              "provider": {
-                "nullable": false,
+              "password": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
-              "providerAccountId": {
+              "providerId": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
@@ -661,6 +679,13 @@
                   "kind": "scalar"
                 }
               },
+              "refreshTokenExpiresAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "scope": {
                 "nullable": true,
                 "type": {
@@ -668,10 +693,10 @@
                   "kind": "scalar"
                 }
               },
-              "tokenType": {
-                "nullable": true,
+              "updatedAt": {
+                "nullable": false,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
                 }
               },
@@ -706,8 +731,14 @@
                 "accessToken": {
                   "column": "accessToken"
                 },
-                "expiresAt": {
-                  "column": "expiresAt"
+                "accessTokenExpiresAt": {
+                  "column": "accessTokenExpiresAt"
+                },
+                "accountId": {
+                  "column": "accountId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
                 },
                 "id": {
                   "column": "id"
@@ -715,20 +746,23 @@
                 "idToken": {
                   "column": "idToken"
                 },
-                "provider": {
-                  "column": "provider"
+                "password": {
+                  "column": "password"
                 },
-                "providerAccountId": {
-                  "column": "providerAccountId"
+                "providerId": {
+                  "column": "providerId"
                 },
                 "refreshToken": {
                   "column": "refreshToken"
                 },
+                "refreshTokenExpiresAt": {
+                  "column": "refreshTokenExpiresAt"
+                },
                 "scope": {
                   "column": "scope"
                 },
-                "tokenType": {
-                  "column": "tokenType"
+                "updatedAt": {
+                  "column": "updatedAt"
                 },
                 "userId": {
                   "column": "userId"
@@ -4653,6 +4687,47 @@
               "table": "phoneNumber"
             }
           },
+          "RateLimit": {
+            "fields": {
+              "count": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "key": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "windowStart": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "count": {
+                  "column": "count"
+                },
+                "key": {
+                  "column": "key"
+                },
+                "windowStart": {
+                  "column": "windowStart"
+                }
+              },
+              "namespaceId": "public",
+              "table": "rateLimit"
+            }
+          },
           "SectorTemplate": {
             "fields": {
               "createdAt": {
@@ -4787,6 +4862,13 @@
                   "kind": "scalar"
                 }
               },
+              "impersonatedBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "ipAddress": {
                 "nullable": true,
                 "type": {
@@ -4794,10 +4876,17 @@
                   "kind": "scalar"
                 }
               },
-              "sessionToken": {
+              "token": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
                 }
               },
@@ -4845,11 +4934,17 @@
                 "id": {
                   "column": "id"
                 },
+                "impersonatedBy": {
+                  "column": "impersonatedBy"
+                },
                 "ipAddress": {
                   "column": "ipAddress"
                 },
-                "sessionToken": {
-                  "column": "sessionToken"
+                "token": {
+                  "column": "token"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
                 },
                 "userAgent": {
                   "column": "userAgent"
@@ -5173,6 +5268,27 @@
           },
           "User": {
             "fields": {
+              "banExpires": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "banReason": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "banned": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -5187,10 +5303,10 @@
                   "kind": "scalar"
                 }
               },
-              "emailVerifiedAt": {
-                "nullable": true,
+              "emailVerified": {
+                "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamptz-string@1",
+                  "codecId": "pg/bool@1",
                   "kind": "scalar"
                 }
               },
@@ -5453,14 +5569,23 @@
             },
             "storage": {
               "fields": {
+                "banExpires": {
+                  "column": "banExpires"
+                },
+                "banReason": {
+                  "column": "banReason"
+                },
+                "banned": {
+                  "column": "banned"
+                },
                 "createdAt": {
                   "column": "createdAt"
                 },
                 "email": {
                   "column": "email"
                 },
-                "emailVerifiedAt": {
-                  "column": "emailVerifiedAt"
+                "emailVerified": {
+                  "column": "emailVerified"
                 },
                 "id": {
                   "column": "id"
@@ -5500,12 +5625,26 @@
               "table": "user"
             }
           },
-          "VerificationToken": {
+          "Verification": {
             "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "expiresAt": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -5516,7 +5655,14 @@
                   "kind": "scalar"
                 }
               },
-              "token": {
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "value": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
@@ -5527,18 +5673,27 @@
             "relations": {},
             "storage": {
               "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
                 "expiresAt": {
                   "column": "expiresAt"
+                },
+                "id": {
+                  "column": "id"
                 },
                 "identifier": {
                   "column": "identifier"
                 },
-                "token": {
-                  "column": "token"
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "value": {
+                  "column": "value"
                 }
               },
               "namespaceId": "public",
-              "table": "verificationToken"
+              "table": "verification"
             }
           },
           "WebhookEvent": {
@@ -5654,10 +5809,24 @@
                   "nativeType": "text",
                   "nullable": true
                 },
-                "expiresAt": {
-                  "codecId": "pg/int4@1",
-                  "nativeType": "int4",
+                "accessTokenExpiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
                   "nullable": true
+                },
+                "accountId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
                 },
                 "id": {
                   "codecId": "pg/text@1",
@@ -5669,12 +5838,12 @@
                   "nativeType": "text",
                   "nullable": true
                 },
-                "provider": {
+                "password": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
-                  "nullable": false
+                  "nullable": true
                 },
-                "providerAccountId": {
+                "providerId": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": false
@@ -5684,15 +5853,20 @@
                   "nativeType": "text",
                   "nullable": true
                 },
+                "refreshTokenExpiresAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
                 "scope": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": true
                 },
-                "tokenType": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
                 },
                 "userId": {
                   "codecId": "pg/text@1",
@@ -5737,8 +5911,8 @@
               "uniques": [
                 {
                   "columns": [
-                    "provider",
-                    "providerAccountId"
+                    "providerId",
+                    "accountId"
                   ]
                 }
               ]
@@ -8868,6 +9042,33 @@
                 }
               ]
             },
+            "rateLimit": {
+              "columns": {
+                "count": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "key": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "windowStart": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "key"
+                ]
+              },
+              "uniques": []
+            },
             "sectorTemplate": {
               "columns": {
                 "createdAt": {
@@ -8965,14 +9166,24 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "impersonatedBy": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "ipAddress": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": true
                 },
-                "sessionToken": {
+                "token": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
                   "nullable": false
                 },
                 "userAgent": {
@@ -9023,7 +9234,7 @@
               "uniques": [
                 {
                   "columns": [
-                    "sessionToken"
+                    "token"
                   ]
                 }
               ]
@@ -9300,6 +9511,25 @@
                 }
               ],
               "columns": {
+                "banExpires": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "banReason": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "banned": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "default": {
@@ -9314,10 +9544,14 @@
                   "nativeType": "text",
                   "nullable": false
                 },
-                "emailVerifiedAt": {
-                  "codecId": "pg/timestamptz-string@1",
-                  "nativeType": "timestamptz",
-                  "nullable": true
+                "emailVerified": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
                 },
                 "id": {
                   "codecId": "pg/text@1",
@@ -9427,11 +9661,25 @@
                 }
               ]
             },
-            "verificationToken": {
+            "verification": {
               "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
                 "expiresAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
                   "nullable": false
                 },
                 "identifier": {
@@ -9439,27 +9687,34 @@
                   "nativeType": "text",
                   "nullable": false
                 },
-                "token": {
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "value": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": false
                 }
               },
               "foreignKeys": [],
-              "indexes": [],
-              "uniques": [
+              "indexes": [
                 {
                   "columns": [
-                    "token"
-                  ]
-                },
-                {
-                  "columns": [
-                    "identifier",
-                    "token"
-                  ]
+                    "identifier"
+                  ],
+                  "name": "verification_identifier_idx_79a0dbb3",
+                  "prefix": "verification_identifier_idx",
+                  "unique": false
                 }
-              ]
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             },
             "webhookEvent": {
               "checks": [
@@ -9754,10 +10009,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "a6cc25460b34ae08e1d9ef21abf5d45f7e838922341a1e0ef5f4570bac230367"
+    "storageHash": "77ffb7dd18a4c065feff1ddee4594d5e3c9f919ccbf98612df9a0d1160c6090b"
   },
   "execution": {
-    "executionHash": "210d8da988fae317a544a53bb339a3f26890e7a16a7832167fe38b4d8d5a2c2e",
+    "executionHash": "9cad95f8d0a5059a6f0e2f7d7c85223ebeda03907c05c85a0718c73ff8dae1b0",
     "mutations": {
       "defaults": [
         {
@@ -9767,6 +10022,21 @@
           },
           "ref": {
             "column": "id",
+            "namespace": "public",
+            "table": "account"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
             "namespace": "public",
             "table": "account"
           }
@@ -10146,6 +10416,21 @@
         },
         {
           "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "session"
+          }
+        },
+        {
+          "onCreate": {
             "id": "uuidv4",
             "kind": "generator"
           },
@@ -10220,6 +10505,32 @@
             "column": "updatedAt",
             "namespace": "public",
             "table": "user"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "verification"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updatedAt",
+            "namespace": "public",
+            "table": "verification"
           }
         },
         {

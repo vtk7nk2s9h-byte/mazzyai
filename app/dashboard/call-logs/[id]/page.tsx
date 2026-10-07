@@ -19,7 +19,7 @@ import {
   SentimentDot,
 } from '@/app/ui/call-logs/status';
 import SaveContact from '@/app/ui/call-logs/save-contact';
-import Breadcrumbs from '@/app/ui/invoices/breadcrumbs';
+import Breadcrumbs from '@/app/ui/breadcrumbs';
 import { Field, Section, Toggle } from '@/app/ui/organizations/field';
 import { EmailSentBadge, label } from '@/app/ui/organizations/status';
 

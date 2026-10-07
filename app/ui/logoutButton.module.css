@@ -120,13 +120,30 @@
 /* Scaled to the shorter button so the figure walks through a doorway that
    fits inside it rather than being clipped by it. */
 .glass .icon {
-  width: 36px;
-  height: 24px;
+  width: 42px;
+  height: 30px;
 }
 
 .glass .arrow svg {
   width: 24px;
   height: 15px;
+}
+
+/* Icon only: the button is just the figure and doorway at their usual 36x24,
+   so it hugs them instead of stretching to a label's width.
+   The drawing leaves dead space inside its 48x32 box — the artwork spans
+   x≈18–44 — which at 0.75 scale is ~13.5px on the left and ~3px on the right.
+   Negative margins take that out of the flex item's width (the svg is
+   overflow: visible, so nothing is clipped and the walk still plays out in
+   full), leaving the padding as the only space around the marks.
+   Doubled class so the padding beats `.glass` above. */
+.glass.iconOnly {
+  padding: 0 0.55rem;
+  justify-content: center;
+}
+
+.glass.iconOnly .icon {
+  margin: 0 -3px 0 -13.5px;
 }
 
 /* Outline: the OTP toggle's palette, so the two primary moves on the login

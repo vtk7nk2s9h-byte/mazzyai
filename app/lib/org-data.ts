@@ -102,10 +102,6 @@ export const fetchOrganizationBySlug = cache(async (slug: string) => {
 
 /**
  * One page of an organization's invoices, newest period first.
- *
- * These are the contract's `Invoice` rows — Stripe-backed and org-scoped — not
- * the Next.js Learn `invoices` table behind /dashboard/invoices, which has a
- * different schema and no tenant at all.
  */
 export async function fetchOrgInvoicesPage(
   organizationId: string,
@@ -133,6 +129,42 @@ export async function fetchOrgInvoicesPages(organizationId: string) {
   } catch (error) {
     console.error('Database Error:', error);
     throw new Error('Failed to count invoices.');
+  }
+}
+
+/**
+ * The dashboard home's four numbers, for one organization or — with no id, for
+ * a superuser — across all of them. "This month" is the calendar month in UTC.
+ */
+export async function fetchOverviewStats(organizationId?: string) {
+  const now = new Date();
+  const monthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  ).toISOString();
+  const scope = organizationId ? { organizationId } : {};
+
+  try {
+    const [calls, agents, contacts, meetings] = await Promise.all([
+      db.orm.public.Call.where(scope)
+        .where((c) => c.createdAt.gte(monthStart))
+        .aggregate((a) => ({ total: a.count() })),
+      db.orm.public.Agent.where(scope).aggregate((a) => ({ total: a.count() })),
+      db.orm.public.Contact.where(scope).aggregate((a) => ({
+        total: a.count(),
+      })),
+      db.orm.public.Meeting.where({ ...scope, status: 'SCHEDULED' })
+        .where((m) => m.startsAt.gte(now.toISOString()))
+        .aggregate((a) => ({ total: a.count() })),
+    ]);
+    return {
+      callsThisMonth: calls.total,
+      agents: agents.total,
+      contacts: contacts.total,
+      upcomingMeetings: meetings.total,
+    };
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch the overview.');
   }
 }
 

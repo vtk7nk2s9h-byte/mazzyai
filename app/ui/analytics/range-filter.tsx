@@ -47,7 +47,7 @@ export default function RangeFilter({
         {box && (
           <span
             aria-hidden="true"
-            className="absolute inset-y-1 left-0 rounded-lg border border-brand-red-lit/50 bg-maroon-500/40 shadow-[0_0_18px_-6px_rgba(255,46,67,0.7)] transition-[transform,width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none"
+            className="absolute inset-y-1 left-0 rounded-lg border border-brand-red-lit/50 bg-maroon-500/40 shadow-[0_0_18px_-6px_rgba(255,46,67,0.7)] transition-[transform,width] duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none"
             style={{ width: box.w, transform: `translateX(${box.x}px)` }}
           />
         )}

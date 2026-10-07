@@ -15,7 +15,14 @@ const SEQUENCE: [Stage, number][] = [
 ];
 
 type Props = {
+  /** The visible text — or, with `iconOnly`, just the accessible name. */
   label?: string;
+  /**
+   * Drops the label and the arrow so the figure and doorway take the whole
+   * button. `label` becomes the aria-label and tooltip, since the text that
+   * named the button is gone.
+   */
+  iconOnly?: boolean;
   /**
    * "dark" = dark button for light pages, "light" = light button for dark
    * pages, "brand" = brand maroon button with a white door and figure,
@@ -47,6 +54,7 @@ type Props = {
 
 export default function LogoutButton({
   label = "Log Out",
+  iconOnly = false,
   variant = "dark",
   type = "button",
   onStartAction,
@@ -111,17 +119,28 @@ export default function LogoutButton({
       onClick={handleClick}
       aria-busy={busy}
       aria-disabled={disabled || undefined}
+      aria-label={iconOnly ? label : undefined}
+      title={iconOnly ? label : undefined}
       data-stage={stage}
       data-done={done || undefined}
-      className={[styles.button, styles[variant], className]
+      className={[
+        styles.button,
+        styles[variant],
+        iconOnly && styles.iconOnly,
+        className,
+      ]
         .filter(Boolean)
         .join(" ")}
     >
-      <span className={styles.text}>{label}</span>
+      {!iconOnly && (
+        <>
+          <span className={styles.text}>{label}</span>
 
-      <span className={styles.arrow} aria-hidden="true">
-        <ArrowIcon />
-      </span>
+          <span className={styles.arrow} aria-hidden="true">
+            <ArrowIcon />
+          </span>
+        </>
+      )}
 
       <svg
         className={styles.icon}

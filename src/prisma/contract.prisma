@@ -221,17 +221,26 @@ enum AuditActorType {
 model User {
   id              String            @id @default(uuid())
   email           String            @unique
-  emailVerifiedAt TimestamptzString?
+  emailVerified   Boolean           @default(false)
   name            String?
   image           String?
   phone           String?
-  // Credentials sign-up writes a bcrypt hash here. Null for accounts that
-  // only ever authenticate through a provider in Account.
+  // Legacy bcrypt hash from the NextAuth era. Nothing reads or writes it:
+  // Better Auth keeps passwords on the "credential" Account row, and
+  // scripts/migrate-passwords.ts copies these across. Drop it once every
+  // database (local and the Vercel one) has had that script run.
   passwordHash    String?
   timezone        String            @default("UTC")
   locale          String            @default("en")
+  // Better Auth's admin plugin reads and writes this as its `role` field
+  // (mapped in lib/auth.ts).
   systemRole      SystemRole        @default(USER)
   status          UserStatus        @default(ACTIVE)
+  // Admin plugin ban state. Better Auth refuses to create a session while
+  // banned is true and banExpires has not passed.
+  banned          Boolean           @default(false)
+  banReason       String?
+  banExpires      TimestamptzString?
   lastLoginAt     TimestamptzString?
   createdAt       TimestamptzString @default(now())
   updatedAt       temporal.updatedAtString()
@@ -253,43 +262,69 @@ model User {
   @@index([email])
 }
 
-// Auth.js / Better-Auth compatible adapter tables — works with either.
+// Better Auth core tables, in the shape its adapter expects. Table and column
+// names are Better Auth's defaults, so lib/auth.ts needs no field mapping for
+// them.
+
+// One row per way a user can sign in: providerId "credential" holds the
+// password hash; "google" etc. hold OAuth tokens.
 model Account {
-  id                String  @id @default(uuid())
-  userId            String
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider          String // "google", "email" (magic link), etc.
-  providerAccountId String
-  accessToken       String?
-  refreshToken      String?
-  expiresAt         Int?
-  tokenType         String?
-  scope             String?
-  idToken           String?
+  id                    String             @id @default(uuid())
+  userId                String
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId            String
+  accountId             String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  TimestamptzString?
+  refreshTokenExpiresAt TimestamptzString?
+  scope                 String?
+  password              String?
+  createdAt             TimestamptzString  @default(now())
+  updatedAt             temporal.updatedAtString()
 
-  @@unique([provider, providerAccountId])
+  @@unique([providerId, accountId])
   @@index([userId])
 }
 
+// Database sessions: deleting a row signs that device out immediately.
 model Session {
-  id           String            @id @default(uuid())
-  sessionToken String            @unique
-  userId       String
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  ipAddress    String?
-  userAgent    String?
-  expiresAt    TimestamptzString
-  createdAt    TimestamptzString @default(now())
+  id             String            @id @default(uuid())
+  token          String            @unique
+  userId         String
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress      String?
+  userAgent      String?
+  // Set by the admin plugin while a superuser is signed in as someone else:
+  // the superuser's user id, which stopImpersonating() returns to.
+  impersonatedBy String?
+  expiresAt      TimestamptzString
+  createdAt      TimestamptzString @default(now())
+  updatedAt      temporal.updatedAtString()
 
   @@index([userId])
 }
 
-model VerificationToken {
-  identifier String // usually the email
-  token      String            @unique
+// Short-lived secrets: email OTP codes, magic-link tokens, OAuth state.
+model Verification {
+  id         String            @id @default(uuid())
+  identifier String
+  value      String
   expiresAt  TimestamptzString
+  createdAt  TimestamptzString @default(now())
+  updatedAt  temporal.updatedAtString()
 
-  @@unique([identifier, token])
+  @@index([identifier])
+}
+
+// Fixed-window counters for lib/rate-limit.ts: one row per rule and subject
+// (e.g. "sign-in:email:alice@x.com"). Written only through raw SQL there, so
+// the increment and the window reset happen in one atomic upsert.
+model RateLimit {
+  key         String            @id
+  count       Int
+  windowStart TimestamptzString
 }
 
 // =============================================================================

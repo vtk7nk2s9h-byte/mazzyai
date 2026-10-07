@@ -194,14 +194,14 @@ export default function AgentConversationEdit({
             hint="Lower waits longer and replies slower; higher answers as soon as it can."
             value={values.responsiveness}
             range={RESPONSIVENESS_RANGE}
-            onChange={(v) => set('responsiveness', v)}
+            onChangeAction={(v) => set('responsiveness', v)}
           />
           <SliderField
             label="Interruption sensitivity"
             hint="How easily the caller can cut the agent off. 0 never lets them; 1 stops at any sound."
             value={values.interruption}
             range={INTERRUPTION_RANGE}
-            onChange={(v) => set('interruption', v)}
+            onChangeAction={(v) => set('interruption', v)}
           />
 
           <div className="grid grid-cols-2 gap-3">

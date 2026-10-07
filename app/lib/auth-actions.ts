@@ -1,22 +1,13 @@
 'use server';
 
-import bcrypt from 'bcrypt';
-import { AuthError } from 'next-auth';
+import { APIError } from 'better-auth/api';
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
-import {
-  ADMIN_ACCOUNT_EMAIL,
-  auth,
-  hasRole,
-  signIn,
-  signSwitch,
-  type SessionUser,
-} from '@/auth';
+import { ADMIN_ACCOUNT_EMAIL, currentUser, hasRole } from '@/auth';
+import { auth } from '@/lib/auth';
 import { db } from '@/src/prisma/db';
-
-// Work factor 12: ~250ms per hash on commodity hardware. High enough that a
-// leaked table is expensive to crack, low enough that sign-up stays snappy.
-const BCRYPT_ROUNDS = 12;
 
 export type SignUpState = {
   errors?: {
@@ -45,7 +36,7 @@ const SignUpSchema = z.object({
 });
 
 /**
- * Creates a credentials-backed account, then signs the new user straight in.
+ * Creates a password account, then signs the new user straight in.
  *
  * Email is stored lower-cased because the unique index is case-sensitive —
  * without normalising, Alice@ and alice@ would be two separate accounts.
@@ -80,38 +71,28 @@ export async function signUp(
     };
   }
 
+  // Creates the user and its credential account, and signs in: nextCookies()
+  // in lib/auth.ts sets the session cookie on this action's response.
   try {
-    await db.orm.public.User.create({
-      name,
-      email,
-      passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS),
+    await auth.api.signUpEmail({
+      body: { name, email, password },
+      headers: await headers(),
     });
   } catch (error) {
     // Backstop for the race between the check above and this insert: two
     // simultaneous sign-ups with the same address both pass the read, and the
     // unique index rejects the loser.
+    // Better Auth's 4xx messages ("Password too short", …) are written for
+    // the person filling the form in; anything else is our failure.
+    if (error instanceof APIError && error.statusCode < 500) {
+      return { message: error.message };
+    }
     console.error('Sign-up failed:', error);
     return { message: 'Could not create the account. Please try again.' };
   }
 
-  // signIn throws a redirect on success, so it must sit outside the try above
-  // — catching NEXT_REDIRECT would swallow the navigation.
-  try {
-    await signIn('credentials', {
-      email,
-      password,
-      redirectTo: '/dashboard',
-    });
-  } catch (error) {
-    if (error instanceof AuthError) {
-      return {
-        message: 'Account created, but sign-in failed. Try logging in.',
-      };
-    }
-    throw error;
-  }
-
-  return { message: null };
+  // redirect() throws NEXT_REDIRECT, so it must sit outside the try above.
+  redirect('/dashboard');
 }
 
 export type RequestEmailCodeState = {
@@ -134,11 +115,10 @@ const RequestEmailCodeSchema = z.object({
 });
 
 /**
- * Starts the email/OTP sign-in: generates a code, emails it (with a magic
- * link alongside it), and returns without redirecting. `redirect: false`
- * means signIn() resolves instead of throwing NEXT_REDIRECT, so — unlike
- * signUp() above — it's safe to catch every error here, including a Resend
- * outage, and hand the caller a plain message instead of a crashed page.
+ * Starts the email/OTP sign-in: generates a code and emails it, with a
+ * one-click link alongside it (see lib/auth.ts). Nothing here redirects, so
+ * it's safe to catch every error, including a Resend outage, and hand the
+ * caller a plain message instead of a crashed page.
  */
 export async function requestEmailCode(
   _prevState: RequestEmailCodeState,
@@ -155,11 +135,13 @@ export async function requestEmailCode(
   }
 
   try {
-    await signIn('email-otp', {
-      email: parsed.data.email,
-      redirect: false,
+    await auth.api.sendVerificationOTP({
+      body: { email: parsed.data.email, type: 'sign-in' },
     });
   } catch (error) {
+    if (error instanceof APIError && error.status === 'TOO_MANY_REQUESTS') {
+      return { error: error.message };
+    }
     console.error('Failed to send sign-in email:', error);
     return { error: 'Could not send the code. Please try again in a moment.' };
   }
@@ -174,29 +156,80 @@ export async function requestEmailCode(
  * One-click switch behind the sidebar's profile banner: a superuser steps into
  * the admin account, and from there steps back.
  *
- * Who may do what is decided here, from the session, not from anything the
- * form posts: a superuser can go to ADMIN_ACCOUNT_EMAIL, and an account that
- * was reached this way can go back to the superuser recorded in its own
- * encrypted session. An admin who simply logged in has neither, so this cannot
- * be used to climb to superuser.
+ * Who may do what is decided from the session, not from anything the form
+ * posts: a superuser can impersonate ADMIN_ACCOUNT_EMAIL (lib/auth.ts refuses
+ * any other target), and an impersonated session can stop impersonating. An
+ * admin who simply logged in has neither, so this cannot be used to climb to
+ * superuser.
  */
 export async function switchAccountAction() {
-  const me = (await auth())?.user as SessionUser | undefined;
-  if (!me?.id) return;
+  const me = await currentUser();
+  if (!me) return;
 
-  let token: string;
   if (me.impersonatorId) {
-    token = signSwitch({ toId: me.impersonatorId });
+    await auth.api.stopImpersonating({ headers: await headers() });
   } else if (hasRole(me.role, 'SUPERUSER')) {
     const admin = await db.orm.public.User.where({ email: ADMIN_ACCOUNT_EMAIL })
       .select('id')
       .first();
     if (!admin) return;
-    token = signSwitch({ toId: admin.id, impersonatorId: me.id });
+    await auth.api.impersonateUser({
+      body: { userId: admin.id },
+      headers: await headers(),
+    });
   } else {
     return;
   }
 
-  // Throws NEXT_REDIRECT on success, so it stays outside any try/catch.
-  await signIn('switch-account', { token, redirectTo: '/dashboard' });
+  redirect('/dashboard');
+}
+
+/**
+ * Password sign-in, for login-form.tsx's useActionState. Returns an error
+ * message, or redirects to the page the visitor was sent to /login from.
+ */
+export async function authenticate(
+  _prevState: string | undefined,
+  formData: FormData,
+): Promise<string | undefined> {
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  const password = String(formData.get('password') ?? '');
+
+  try {
+    await auth.api.signInEmail({
+      body: { email, password },
+      headers: await headers(),
+    });
+  } catch (error) {
+    // 403 (disabled or banned) and 429 (rate limited) carry a message meant
+    // for the user.
+    if (
+      error instanceof APIError &&
+      (error.status === 'FORBIDDEN' || error.status === 'TOO_MANY_REQUESTS')
+    ) {
+      return error.message;
+    }
+    if (error instanceof APIError) return 'Invalid credentials.';
+    console.error('Sign-in failed:', error);
+    return 'Something went wrong.';
+  }
+
+  redirect(safeRedirect(formData.get('redirectTo')));
+}
+
+// Same-origin paths only: "//evil.com" is protocol-relative, so it's refused
+// along with absolute URLs.
+function safeRedirect(target: FormDataEntryValue | null): string {
+  return typeof target === 'string' &&
+    target.startsWith('/') &&
+    !target.startsWith('//')
+    ? target
+    : '/dashboard';
+}
+
+// Callable from client components, so the animated logout button can run its
+// sequence first and sign out when it finishes.
+export async function signOutAction() {
+  await auth.api.signOut({ headers: await headers() });
+  redirect('/');
 }

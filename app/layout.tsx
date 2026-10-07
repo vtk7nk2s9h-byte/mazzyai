@@ -1,5 +1,5 @@
 import "../app/ui/global.css";
-import { auth } from "@/auth";
+import { currentUser } from "@/auth";
 import { Header } from "@/components/ui/header-3";
 import MaroonDataWires from "@/components/ui/maroon-data-wires";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,7 +13,6 @@ export const metadata: Metadata = {
     default: 'Mazzy AI',
   },
   description: 'Your next AI voice agents recruiter',
-  metadataBase: new URL('https://next-learn-dashboard.vercel.sh'),
 };
 
 export default async function RootLayout({
@@ -23,9 +22,9 @@ export default async function RootLayout({
 }) {
   // The marketing header is for signed-out visitors only; once you're in, the
   // dashboard's own chrome takes over. Reading the session here is what makes
-  // every route dynamic — acceptable because the middleware already runs auth
-  // on each request, so nothing in this app was being served statically.
-  const session = await auth();
+  // every route dynamic — acceptable because proxy.ts already runs auth on
+  // each request, so nothing in this app was being served statically.
+  const me = await currentUser();
 
   return (
     // The head script sets data-theme/class on <html> before React hydrates,
@@ -43,7 +42,7 @@ export default async function RootLayout({
       </head>
       <body className={`${inter.className} antialiased`}>
         <MaroonDataWires />
-        {!session?.user && <Header />}
+        {!me && <Header />}
         {children}
         <Toaster />
       </body>

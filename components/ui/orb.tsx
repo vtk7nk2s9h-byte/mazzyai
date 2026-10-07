@@ -216,7 +216,11 @@ export function Orb({
     const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting));
     io.observe(el);
 
-    const clock = new THREE.Clock();
+    // Timer, not Clock (deprecated). Unlike Clock, getDelta()
+    // only reads the value update() stored, so update() runs every frame —
+    // hidden ones included, which is what keeps the first frame back from
+    // seeing the whole time spent hidden.
+    const timer = new THREE.Timer();
     let time = 0;
     let energy: number = STATES.idle.energy;
     let speed: number = STATES.idle.speed;
@@ -225,11 +229,9 @@ export function Orb({
 
     const frame = () => {
       raf = requestAnimationFrame(frame);
-      if (!visible || document.hidden) {
-        clock.getDelta();
-        return;
-      }
-      const dt = Math.min(clock.getDelta(), 0.1);
+      timer.update();
+      if (!visible || document.hidden) return;
+      const dt = Math.min(timer.getDelta(), 0.1);
       // Ease toward the state's values, so a change reads as a transition.
       const k = 1 - Math.exp(-dt * 4);
       energy += (target.current.energy - energy) * k;

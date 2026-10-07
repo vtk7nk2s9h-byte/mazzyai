@@ -14,7 +14,7 @@ import {
 import { formatDateToLocal } from '@/app/lib/utils';
 import AgentConversationEdit from '@/app/ui/agents/agent-conversation-edit';
 import AgentVoiceEdit from '@/app/ui/agents/agent-voice-edit';
-import Breadcrumbs from '@/app/ui/invoices/breadcrumbs';
+import Breadcrumbs from '@/app/ui/breadcrumbs';
 import { Field, Section, Toggle } from '@/app/ui/organizations/field';
 import {
   AgentStatusBadge,

@@ -29,19 +29,19 @@
 #     build:
 #       context: .
 #       dockerfile: Dockerfile.dev
-#     container_name: nextjs-dashboard-app
+#     container_name: mazzyai-app
 #     restart: unless-stopped
 #     ports:
 #       - '3000:3000'
 #     env_file:
-#       # AUTH_SECRET and the legacy POSTGRES_URL. DATABASE_URL is in here too
+#       # AUTH_SECRET and the API keys. DATABASE_URL is in here too
 #       # but is overridden below — `environment` wins over `env_file`.
 #       - .env
 #     environment:
 #       # Inside the compose network the database is `postgres:5432`. The
 #       # host's localhost:5433 mapping does not exist in here, and `localhost`
 #       # would resolve to this container itself.
-#       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/nextjs_dashboard
+#       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/mazzyai
 #       # Turns on watchOptions.pollIntervalMs in next.config.ts. Windows bind
 #       # mounts deliver no inotify events into Linux, so without polling the
 #       # dev server never sees an edit.
@@ -60,15 +60,20 @@
 #         # otherwise the first query races Postgres's startup.
 #         condition: service_healthy
 
+# Fixed rather than taken from the folder name, so renaming or moving the
+# checkout keeps the same containers and volume. (The older checkout's stack is
+# "mazzyai-test", so the two never share a project.)
+name: mazzyai
+
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: nextjs-dashboard-db
+    container_name: mazzyai-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: nextjs_dashboard
+      POSTGRES_DB: mazzyai
     ports:
       # Host 5433, not 5432: this machine runs a native PostgreSQL service that
       # already owns 5432, and it answers localhost first — connections meant
@@ -80,10 +85,12 @@ services:
     healthcheck:
       # Lets `docker compose up --wait` block until the server actually
       # accepts connections, rather than just until the container starts.
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d nextjs_dashboard']
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d mazzyai']
       interval: 5s
       timeout: 5s
       retries: 10
 
 volumes:
   postgres-data:
+    # Explicit for the same reason as `name:` above.
+    name: mazzyai-db-data

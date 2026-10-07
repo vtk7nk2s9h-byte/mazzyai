@@ -10,7 +10,7 @@ import {
   type RetellAgentDetail,
 } from '@/app/lib/agent-data';
 import { voiceModelsFor } from '@/app/lib/retell-options';
-import Pagination from '@/app/ui/invoices/pagination';
+import Pagination from '@/app/ui/pagination';
 import AgentNameEdit from '@/app/ui/agents/agent-name-edit';
 import AssignAgent from '@/app/ui/agents/assign-agent';
 import LanguageSelect from '@/app/ui/agents/language-select';
@@ -109,10 +109,10 @@ export async function RetellAgentsTable({
   return (
     <>
     <div className="mt-6 flow-root overflow-x-auto pb-16">
-      <div className="inline-block min-w-full align-middle">
-        <div className="rounded-lg bg-gray-50 p-2 border border-white/[0.12] shadow-sm">
-          <table className="min-w-full text-sm text-gray-900 ">
-            <thead className="text-left font-normal">
+      <div className="rounded-lg inline-block min-w-full align-middle">
+        <div className="rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] p-2 border border-white/[0.12] shadow-sm">
+          <table className="rounded-lg min-w-full text-sm text-gray-900 ">
+            <thead className="rounded-lg text-left font-bold">
               <tr>
                 <th className="px-4 py-4 font-medium">Name</th>
                 <th className="px-3 py-4 font-medium">Voice model</th>
@@ -122,7 +122,7 @@ export async function RetellAgentsTable({
                 <th className="px-3 py-4 font-medium">Language</th>
               </tr>
             </thead>
-            <tbody className="bg-gray-100">
+            <tbody>
               {agents.map((a, i) => {
                 const d = details[i];
                 // The same viewers who get the link get the pencil.

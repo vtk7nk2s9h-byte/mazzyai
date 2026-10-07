@@ -34,7 +34,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'77ffb7dd18a4c065feff1ddee4594d5e3c9f919ccbf98612df9a0d1160c6090b'>;
+  StorageHashBase<'397175a0931c93559d157fa92b53ad958d4f8524cad4e035b789ca372b5a96f0'>;
 export type ExecutionHash =
   ExecutionHashBase<'9cad95f8d0a5059a6f0e2f7d7c85223ebeda03907c05c85a0718c73ff8dae1b0'>;
 export type ProfileHash =
@@ -560,11 +560,6 @@ export type FieldOutputTypes = {
       readonly purchasedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly releasedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
     };
-    readonly RateLimit: {
-      readonly key: CodecTypes['pg/text@1']['output'];
-      readonly count: CodecTypes['pg/int4@1']['output'];
-      readonly windowStart: CodecTypes['pg/timestamptz-string@1']['output'];
-    };
     readonly SectorTemplate: {
       readonly id: CodecTypes['pg/text@1']['output'];
       readonly key: CodecTypes['pg/text@1']['output'];
@@ -975,11 +970,6 @@ export type FieldInputTypes = {
       readonly isActive: CodecTypes['pg/bool@1']['input'];
       readonly purchasedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly releasedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
-    };
-    readonly RateLimit: {
-      readonly key: CodecTypes['pg/text@1']['input'];
-      readonly count: CodecTypes['pg/int4@1']['input'];
-      readonly windowStart: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly SectorTemplate: {
       readonly id: CodecTypes['pg/text@1']['input'];
@@ -1392,11 +1382,6 @@ export type StorageColumnTypes = {
       readonly releasedAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly retellPhoneNumberId: CodecTypes['pg/text@1']['output'] | null;
     };
-    readonly rateLimit: {
-      readonly count: CodecTypes['pg/int4@1']['output'];
-      readonly key: CodecTypes['pg/text@1']['output'];
-      readonly windowStart: CodecTypes['pg/timestamptz-string@1']['output'];
-    };
     readonly sectorTemplate: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly defaultPromptTemplate: CodecTypes['pg/text@1']['output'];
@@ -1808,11 +1793,6 @@ export type StorageColumnInputTypes = {
       readonly releasedAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly retellPhoneNumberId: CodecTypes['pg/text@1']['input'] | null;
     };
-    readonly rateLimit: {
-      readonly count: CodecTypes['pg/int4@1']['input'];
-      readonly key: CodecTypes['pg/text@1']['input'];
-      readonly windowStart: CodecTypes['pg/timestamptz-string@1']['input'];
-    };
     readonly sectorTemplate: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly defaultPromptTemplate: CodecTypes['pg/text@1']['input'];
@@ -1985,12 +1965,6 @@ export namespace Models {
     expiresAt: CodecTypes['pg/timestamptz-string@1']['output'];
     createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
-    readonly [RelationKeys]?: never;
-  };
-  export type public_RateLimit = {
-    key: CodecTypes['pg/text@1']['output'];
-    count: CodecTypes['pg/int4@1']['output'];
-    windowStart: CodecTypes['pg/timestamptz-string@1']['output'];
     readonly [RelationKeys]?: never;
   };
   export type public_Organization = {
@@ -2474,7 +2448,6 @@ export declare const models: {
     Account: Models.public_Account;
     Session: Models.public_Session;
     Verification: Models.public_Verification;
-    RateLimit: Models.public_RateLimit;
     Organization: Models.public_Organization;
     Membership: Models.public_Membership;
     Agent: Models.public_Agent;
@@ -4996,29 +4969,6 @@ type ContractBase = Omit<
                 },
               ];
             };
-            readonly rateLimit: {
-              columns: {
-                readonly key: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: false;
-                };
-                readonly count: {
-                  readonly nativeType: 'int4';
-                  readonly codecId: 'pg/int4@1';
-                  readonly nullable: false;
-                };
-                readonly windowStart: {
-                  readonly nativeType: 'timestamptz';
-                  readonly codecId: 'pg/timestamptz-string@1';
-                  readonly nullable: false;
-                };
-              };
-              primaryKey: { readonly columns: readonly ['key'] };
-              uniques: readonly [];
-              indexes: readonly [];
-              foreignKeys: readonly [];
-            };
             readonly sectorTemplate: {
               columns: {
                 readonly id: {
@@ -5710,7 +5660,6 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Verification';
     };
-    readonly rateLimit: { readonly namespace: 'public' & NamespaceId; readonly model: 'RateLimit' };
     readonly organization: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Organization';
@@ -8264,35 +8213,6 @@ type ContractBase = Omit<
                 readonly isActive: { readonly column: 'isActive' };
                 readonly purchasedAt: { readonly column: 'purchasedAt' };
                 readonly releasedAt: { readonly column: 'releasedAt' };
-              };
-            };
-          };
-          readonly RateLimit: {
-            readonly fields: {
-              readonly key: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly count: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
-              };
-              readonly windowStart: {
-                readonly nullable: false;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/timestamptz-string@1';
-                };
-              };
-            };
-            readonly relations: Record<string, never>;
-            readonly storage: {
-              readonly table: 'rateLimit';
-              readonly namespaceId: 'public';
-              readonly fields: {
-                readonly key: { readonly column: 'key' };
-                readonly count: { readonly column: 'count' };
-                readonly windowStart: { readonly column: 'windowStart' };
               };
             };
           };

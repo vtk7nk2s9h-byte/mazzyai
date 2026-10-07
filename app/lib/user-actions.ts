@@ -1,15 +1,18 @@
 'use server';
 
-import bcrypt from 'bcrypt';
+import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { withRoleAction } from '@/auth';
-import { USER_ROLES, type UserRole } from '@/app/lib/utils';
+import {
+  USER_ROLES,
+  USER_STATUSES,
+  type UserRole,
+  type UserStatus,
+} from '@/app/lib/utils';
+import { auth } from '@/lib/auth';
 import { db } from '@/src/prisma/db';
-
-// Same work factor as sign-up (auth-actions.ts).
-const BCRYPT_ROUNDS = 12;
 
 const CreateUserSchema = z.object({
   name: z.string().trim().min(2, 'Please enter a name.').max(120),
@@ -47,13 +50,13 @@ export const createUser = withRoleAction(
       .first();
     if (existing) return { error: 'That email is already registered.' };
 
+    // The admin plugin creates the user and its credential account together,
+    // hashing with lib/auth.ts's bcrypt settings. It re-checks that the
+    // caller's session may create users, on top of withRoleAction above.
     try {
-      await db.orm.public.User.create({
-        name,
-        email,
-        passwordHash: await bcrypt.hash(password, BCRYPT_ROUNDS),
-        systemRole: role,
-        status: 'ACTIVE',
+      await auth.api.createUser({
+        body: { name, email, password, role },
+        headers: await headers(),
       });
     } catch (error) {
       // Backstop for two creates racing past the check above.
@@ -92,6 +95,66 @@ export const updateUserRole = withRoleAction(
       return { error: 'Could not update the role. Please try again.' };
     }
     revalidatePath('/dashboard/team');
+    return { ok: true as const };
+  },
+);
+
+/**
+ * Enables or disables an account. Superusers only, and never your own — the
+ * same guard as updateUserRole.
+ *
+ * lib/auth.ts already refuses new sessions for a DISABLED account; disabling
+ * also revokes the ones already open, so it takes effect on the person's next
+ * request rather than when their session would have expired.
+ */
+export const updateUserStatus = withRoleAction(
+  'SUPERUSER',
+  async (me, userId: string, status: string) => {
+    if (!(USER_STATUSES as readonly string[]).includes(status)) {
+      return { error: 'Unknown status.' };
+    }
+    if (userId === me.id) {
+      return { error: 'You cannot change your own status.' };
+    }
+    try {
+      await db.orm.public.User.where({ id: userId }).update({
+        status: status as UserStatus,
+      });
+      if (status === 'DISABLED') {
+        await auth.api.revokeUserSessions({
+          body: { userId },
+          headers: await headers(),
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update user status:', error);
+      return { error: 'Could not update the status. Please try again.' };
+    }
+    revalidatePath('/dashboard/team');
+    return { ok: true as const };
+  },
+);
+
+/**
+ * Ends every session a user has, on every device, without disabling them —
+ * for a lost laptop or a leaked password. They can sign straight back in.
+ * Your own sessions are left to the sidebar's Sign Out.
+ */
+export const signOutEverywhere = withRoleAction(
+  'SUPERUSER',
+  async (me, userId: string) => {
+    if (userId === me.id) {
+      return { error: 'Use Sign Out to end your own session.' };
+    }
+    try {
+      await auth.api.revokeUserSessions({
+        body: { userId },
+        headers: await headers(),
+      });
+    } catch (error) {
+      console.error('Failed to revoke sessions:', error);
+      return { error: 'Could not sign them out. Please try again.' };
+    }
     return { ok: true as const };
   },
 );

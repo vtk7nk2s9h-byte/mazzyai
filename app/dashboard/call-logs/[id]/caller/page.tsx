@@ -5,7 +5,7 @@ import { currentUser, hasRole } from '@/auth';
 import { fetchCall } from '@/app/lib/call-data';
 import { fetchMyOrganizationId } from '@/app/lib/meeting-data';
 import { callerLabel } from '@/app/lib/utils';
-import Breadcrumbs from '@/app/ui/invoices/breadcrumbs';
+import Breadcrumbs from '@/app/ui/breadcrumbs';
 import { Field, Section } from '@/app/ui/organizations/field';
 
 export const metadata: Metadata = {

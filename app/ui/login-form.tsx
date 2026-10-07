@@ -9,8 +9,8 @@ import {
 import LogoutButton from '@/app/ui/log-out-button';
 import Link from 'next/link';
 import { useActionState, useId } from 'react';
-import { authenticate } from '@/app/lib/actions';
 import {
+  authenticate,
   requestEmailCode,
   type RequestEmailCodeState,
 } from '@/app/lib/auth-actions';
@@ -18,6 +18,14 @@ import { useSearchParams } from 'next/navigation';
 import styles from '@/app/ui/login-form.module.css';
 
 const initialCodeState: RequestEmailCodeState = {};
+
+// The ?error= values app/login/email-link sends back.
+const CODE_ERRORS: Record<string, string> = {
+  'invalid-code': 'That code is wrong or has already been used.',
+  'code-expired': 'That code has expired. Send a new one.',
+  'too-many-attempts': 'Too many wrong tries for that code. Send a new one.',
+  'rate-limited': 'Too many sign-in attempts. Wait a few minutes and try again.',
+};
 
 const field =
   'peer block w-full rounded-md border border-gray-200 py-[9px] pl-10 text-sm outline-2 placeholder:text-gray-500';
@@ -31,6 +39,9 @@ const panel =
 export default function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  // Set by app/login/email-link when a typed code or emailed link failed.
+  const codeError = searchParams.get('error');
+  const codeErrorMessage = codeError ? CODE_ERRORS[codeError] : undefined;
   const [errorMessage, formAction, isPending] = useActionState(
     authenticate,
     undefined,
@@ -39,6 +50,13 @@ export default function LoginForm() {
     requestEmailCode,
     initialCodeState,
   );
+  // A wrong code still has tries left, so the code box comes back for it with
+  // the address it was sent to.
+  const codeEmail =
+    codeState.email ??
+    (codeError === 'invalid-code'
+      ? searchParams.get('email') || undefined
+      : undefined);
   // clipPath ids are document-global, so it has to be unique per instance.
   const aboveEnvelope = `otp-above-${useId().replace(/:/g, '')}`;
 
@@ -154,7 +172,12 @@ export default function LoginForm() {
         className="glow-ring pointer-events-none absolute inset-0 z-10 rounded-[inherit]"
       />
 
-    <details className="relative rounded-[inherit] border border-white/[0.07] bg-white/[0.05] px-6 py-4 backdrop-blur-xl">
+    {/* Opens itself when sent back from a failed code or link, so the message
+        below is visible. */}
+    <details
+      open={!!codeErrorMessage || undefined}
+      className="relative rounded-[inherit] border border-white/[0.07] bg-white/[0.05] px-6 py-4 backdrop-blur-xl"
+    >
       <summary className={styles.otpToggle}>
         <span className={styles.mail} aria-hidden="true">
           <svg
@@ -230,13 +253,17 @@ export default function LoginForm() {
             name="email"
             placeholder="Enter your email address"
             autoComplete="email"
-            defaultValue={codeState.email}
+            defaultValue={codeEmail}
             required
           />
           <AtSymbolIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-500 peer-focus:text-gray-900" />
         </div>
-        <SendCodeButton pending={isCodePending} sent={!!codeState.email} />
+        <SendCodeButton pending={isCodePending} sent={!!codeEmail} />
         <div aria-live="polite" aria-atomic="true">
+          {/* Cleared by a fresh send, which is what fixes it. */}
+          {codeErrorMessage && !codeState.email && (
+            <p className="text-sm text-red-500">{codeErrorMessage}</p>
+          )}
           {codeState.error && (
             <p className="text-sm text-red-500">{codeState.error}</p>
           )}
@@ -251,18 +278,17 @@ export default function LoginForm() {
           screen asking for the same thing. The address rides along hidden,
           taken from what requestEmailCode just confirmed.
 
-          Plain GET straight to Auth.js's own callback route — the emailed
-          link is the same URL, just with `token` filled in already, so
-          clicking it and typing the code here verify identically. No
-          client-side handling needed. */}
-      {codeState.email && (
+          Plain GET to app/login/email-link — the emailed link is the same
+          URL with `otp` filled in already, so clicking it and typing the
+          code here verify identically. No client-side handling needed. */}
+      {codeEmail && (
         <form
           method="get"
-          action="/api/auth/callback/email-otp"
+          action="/login/email-link"
           className="mt-4 space-y-3 border-t border-gray-200 pt-4"
         >
           <input type="hidden" name="callbackUrl" value={callbackUrl} />
-          <input type="hidden" name="email" value={codeState.email} />
+          <input type="hidden" name="email" value={codeEmail} />
 
           <label
             className="block text-xs font-medium text-gray-900"
@@ -273,12 +299,12 @@ export default function LoginForm() {
           {/* Keyed on the address so a fresh send remounts the field, which is
               what lets autoFocus fire again and clears any stale digits. */}
           <input
-            key={codeState.email}
+            key={codeEmail}
             autoFocus
             className={field.replace('pl-10', 'px-3')}
             id="otp-token"
             type="text"
-            name="token"
+            name="otp"
             inputMode="numeric"
             pattern="[0-9]{6}"
             maxLength={6}

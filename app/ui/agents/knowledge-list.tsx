@@ -37,18 +37,18 @@ export default async function KnowledgeList({
 
   if (docs.length === 0) {
     return (
-      <div className="mt-4 rounded-lg bg-gray-50 p-8 text-center text-sm text-gray-500">
+      <div className="mt-4 rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] rounded-lg p-8 text-center text-sm text-gray-500">
         Nothing uploaded yet. Add text, a URL or a file above.
       </div>
     );
   }
 
   return (
-    <div className="mt-4 flow-root overflow-x-auto">
+    <div className="mt-4 flow-root overflow-x-auto bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] rounded-lg">
       <div className="inline-block min-w-full align-middle">
-        <div className="rounded-lg bg-gray-50 p-2 border border-white/[0.12]">
+        <div className="p-2 border border-white/[0.12]">
           <table className="min-w-full text-sm text-gray-900">
-            <thead className="text-left font-normal">
+            <thead className="text-left font-bold">
               <tr>
                 <th className="px-4 py-4 font-medium">Name</th>
                 <th className="px-3 py-4 font-medium">Type</th>
@@ -57,9 +57,9 @@ export default async function KnowledgeList({
                 <th className="px-3 py-4 font-medium">Added</th>
               </tr>
             </thead>
-            <tbody className="bg-gray-100">
+            <tbody>
               {docs.map((d) => (
-                <tr key={d.id} className="border-b last-of-type:border-none">
+                <tr key={d.id}>
                   <td className="max-w-[40ch] px-4 py-3">
                     <p className="truncate font-medium">{d.title}</p>
                     {d.sourceUrl && (

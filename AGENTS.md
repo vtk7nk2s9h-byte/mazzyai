@@ -46,14 +46,25 @@ Rules of thumb:
 - `cuid()` is rejected by the SQL PSL provider (despite appearing in its own
   error text); ids use `uuid()`. `Json[]` columns cannot have a default, so
   creates must pass the array explicitly (e.g. `rawEvents: []`).
+- **Auth is Better Auth** (`lib/auth.ts`), not NextAuth. It talks to Postgres
+  through its own `pg` Pool — its Prisma adapter needs `@prisma/client`. Pages
+  and actions import `currentUser` / `hasRole` / `withRoleAction` from `@/auth`
+  (the root `auth.ts`), never `lib/auth.ts` directly. Roles live in
+  `user.systemRole`, mapped to the admin plugin's `role`.
+- Better Auth's `generateId: 'uuid'` leaves ids to the database on Postgres,
+  and these `text` id columns have no default — ids are minted in code
+  (`generateId: () => crypto.randomUUID()`).
+- Rate limits for sign-in, sign-up and email codes are in `lib/rate-limit.ts`,
+  run from a Better Auth `before` hook. `auth.api.*` calls skip Better Auth's
+  own limiter, so a new auth endpoint that needs limiting goes in that file.
+- Passwords are on `account` rows with `providerId: 'credential'`.
+  `user.passwordHash` is a dead legacy column; a database from before the
+  switch needs `node scripts/migrate-passwords.ts` once.
 - **Postgres runs in Docker on port 5433**, not 5432 — this machine has a
   native PostgreSQL service that already owns 5432 and answers `localhost`
   first. `docker compose up -d`, then `pnpm db:seed`.
 - `app/lib/call-data.ts` imports the Prisma client, so it must never be
   imported from a `'use client'` file. Presentational helpers live in
   `app/lib/utils.ts` for that reason.
-- `app/lib/data.ts`, `app/lib/actions.ts`, `app/query/route.ts` and
-  `app/seed/route.ts` are Next.js Learn leftovers still on postgres.js against
-  Neon (`POSTGRES_URL`). They query tables the contract does not define.
 - `package.json` is `"type": "module"`; PostCSS config is `.mjs` and Tailwind
   config uses imports, not `require()`.

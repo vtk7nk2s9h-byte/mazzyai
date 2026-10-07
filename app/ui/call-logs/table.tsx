@@ -95,8 +95,8 @@ export default async function CallLogsTable({
 
   return (
     <div className="mt-6 flow-root overflow-x-auto md:overflow-visible">
-      <div className="inline-block min-w-full align-middle">
-        <div className="border border-white/[0.12] rounded-lg bg-gray-50 p-2 md:pt-0">
+      <div className="inline-block min-w-full align-middle bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] rounded-lg">
+        <div className="rounded-lg p-2 md:pt-0">
           {/* Stacked cards below md — a six-column table is unreadable on a
               phone, so the same rows are re-laid-out rather than scrolled. */}
           <div className="md:hidden">
@@ -167,7 +167,7 @@ export default async function CallLogsTable({
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-gray-100">
+            <tbody>
               {calls.map((call) => (
                 <tr
                   key={call.id}

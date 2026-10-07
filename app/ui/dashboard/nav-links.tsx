@@ -105,10 +105,12 @@ function NavItem({ link, pathname }: { link: NavLink; pathname: string }) {
     <Link
       href={link.href}
       aria-current={active ? 'page' : undefined}
+      // The label is hidden when the sidebar is collapsed.
+      title={link.name}
       className={clsx(
         // No hover fill: the label lights up instead, so the sidebar
         // stays flat and only type and icon carry state.
-        'group flex h-9 grow items-center justify-center gap-2.5 rounded-lg px-2 text-xs font-medium transition-colors md:grow-0 md:justify-start',
+        'group flex h-9 grow items-center justify-center gap-2.5 rounded-lg px-2 text-xs font-medium transition-colors md:grow-0 md:justify-start md:group-data-[sidebar=collapsed]/sb:justify-center',
         active ? 'text-gray-900' : 'text-gray-500',
       )}
     >
@@ -118,7 +120,7 @@ function NavItem({ link, pathname }: { link: NavLink; pathname: string }) {
           active ? 'text-brand-red-lit' : 'group-hover:text-brand-red-lit',
         )}
       />
-      <p className="hidden transition-[color,text-shadow] duration-200 group-hover:text-brand-red-lit group-hover:[text-shadow:0_0_12px_rgba(255,46,67,0.55)] md:block">
+      <p className="hidden transition-[color,text-shadow] duration-200 group-hover:text-brand-red-lit group-hover:[text-shadow:0_0_12px_rgba(255,46,67,0.55)] md:block md:group-data-[sidebar=collapsed]/sb:hidden">
         {link.name}
       </p>
     </Link>

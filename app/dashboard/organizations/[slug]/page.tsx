@@ -11,8 +11,8 @@ import {
 } from '@/app/lib/org-data';
 import { formatCurrency, formatDateToLocal } from '@/app/lib/utils';
 import { lusitana } from '@/app/ui/fonts';
-import Breadcrumbs from '@/app/ui/invoices/breadcrumbs';
-import Pagination from '@/app/ui/invoices/pagination';
+import Breadcrumbs from '@/app/ui/breadcrumbs';
+import Pagination from '@/app/ui/pagination';
 import CallLogsTable from '@/app/ui/call-logs/table';
 import OrgAvatar from '@/app/ui/organizations/avatar';
 import OrgInvoicesTable from '@/app/ui/organizations/invoices-table';

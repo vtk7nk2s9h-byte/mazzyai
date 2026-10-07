@@ -99,7 +99,7 @@ export default function PaymentMethods({
       </div>
 
       <div className="overflow-x-auto md:overflow-visible">
-        <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
+        <div className="rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-2 md:pt-0">
           <table className="min-w-full text-gray-900">
             <thead className="rounded-lg text-left text-sm font-normal">
               <tr>
@@ -113,7 +113,7 @@ export default function PaymentMethods({
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-gray-100">
+            <tbody>
               {methods.length === 0 && (
                 <tr>
                   <td colSpan={6} className="rounded-lg px-6 py-6 text-center text-sm text-gray-500">

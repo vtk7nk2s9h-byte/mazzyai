@@ -7,7 +7,7 @@ import { lusitana } from '@/app/ui/fonts';
 import { fetchOrganizationsPages } from '@/app/lib/org-data';
 import CreateOrganization from '@/app/ui/organizations/create-org';
 import OrganizationsTable from '@/app/ui/organizations/table';
-import Pagination from '@/app/ui/invoices/pagination';
+import Pagination from '@/app/ui/pagination';
 import Search from '@/app/ui/search';
 import { InvoicesTableSkeleton } from '@/app/ui/skeletons';
 

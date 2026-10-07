@@ -23,7 +23,7 @@ export default function AgentCallsBar({
   data: AgentMonthRow[];
 }) {
   return (
-    <section className="rounded-lg border border-white/[0.07] bg-white/[0.05] p-4 backdrop-blur-xl">
+    <section className="rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-4 backdrop-blur-xl">
       <h2 className="text-sm font-semibold">{title}</h2>
       <p className="text-xs text-gray-500">{description}</p>
 
