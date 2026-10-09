@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { withRoleAction } from '@/auth';
 import { AGENT_STATUSES } from '@/app/lib/utils';
 import { retell, retellStorageSettings } from '@/app/lib/retell-api';
+import { RETELL_API_KEY } from '@/lib/env';
 import { db } from '@/src/prisma/db';
 import {
   AGENT_LANGUAGES,
@@ -46,7 +47,7 @@ export type CreateAgentInput = z.input<typeof CreateAgentSchema>;
 export const createRetellAgent = withRoleAction(
   'SUPERUSER',
   async (_me, input: CreateAgentInput) => {
-    if (!process.env.RETELL_API_KEY) {
+    if (!RETELL_API_KEY) {
       return { error: 'RETELL_API_KEY is not set.' };
     }
     const parsed = CreateAgentSchema.safeParse(input);

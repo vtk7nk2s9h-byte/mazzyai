@@ -13,6 +13,17 @@ import { db } from '@/src/prisma/db';
 // Server-side only: imports the mailer and the Prisma client.
 
 const DAY_MS = 86_400_000;
+/**
+ * Ceiling on follow-ups sent in any 24-hour window, across every address.
+ *
+ * The per-address limit below stops one inbox being mailed twice, but on its
+ * own it puts no bound on how many *different* inboxes a script can reach:
+ * the widget is public, the address is visitor-typed, and each new address is
+ * a fresh allowance. This is the bound. It cannot be a per-IP limit — the web
+ * call goes from the browser straight to Retell, so by the time this runs, on
+ * Retell's webhook, the visitor's IP is not ours to see.
+ */
+const MAX_PER_DAY = 200;
 const SUBJECT = 'Thanks for talking with MazzyAI';
 /** Recorded with each send, for the call profile. */
 const EMAIL_TYPE: EmailType = 'FOLLOW_UP';
@@ -33,7 +44,8 @@ const PLAIN_NAME = /^[\p{L}][\p{L} .'’-]{0,39}$/u;
  *  - nothing from the call itself (summary, transcript) goes in the email, only
  *    general product information from the agent's own prompt;
  *  - one email per call (webhooks are delivered more than once);
- *  - one email per address per day.
+ *  - one email per address per day;
+ *  - at most MAX_PER_DAY follow-ups in total per day, whatever the address.
  *
  * Every send is logged as an AuditLog row, action "email.sent", which is also
  * what the Live Events "Emails" filter reads. Throws if the mailer does.
@@ -63,17 +75,34 @@ export async function sendFollowUpEmail(
     .first();
   if (already) return;
 
-  const recent = await db.orm.public.AuditLog.where({ action: 'email.sent' })
-    .select('diff', 'createdAt')
-    .orderBy((a) => a.createdAt.desc())
-    .limit(200)
+  // Both daily limits come off this one query. It is scoped by time, not by a
+  // row count: reading "the last 200 rows" stops covering a whole day as soon
+  // as volume climbs, which is exactly when the limits start to matter.
+  // targetType narrows it to follow-ups — every mail the system sends writes
+  // an "email.sent" row, and unrelated mail must not spend this budget.
+  const since = new Date(Date.now() - DAY_MS).toISOString();
+  const today = await db.orm.public.AuditLog.where({
+    action: 'email.sent',
+    targetType: 'call',
+  })
+    .where((a) => a.createdAt.gte(since))
+    .select('diff')
     .all();
-  const sentToday = recent.some(
-    (r) =>
-      Date.now() - Date.parse(r.createdAt) < DAY_MS &&
-      (r.diff as { to?: string } | null)?.to === to,
-  );
-  if (sentToday) return;
+
+  if (today.length >= MAX_PER_DAY) {
+    // Silence here would look exactly like "no email was due", so say it: past
+    // this point either traffic has outgrown the ceiling or someone is driving
+    // it, and both want a human to look.
+    console.warn(
+      `[follow-up-email] daily cap of ${MAX_PER_DAY} reached; skipping send for call ${call.call_id}`,
+    );
+    return;
+  }
+
+  // Two webhooks arriving together can both read a total under the ceiling and
+  // both send. Left as is: these limits exist to bound how far a bot can get,
+  // not to be exact to the last message.
+  if (today.some((r) => (r.diff as { to?: string } | null)?.to === to)) return;
 
   const c = mailColors;
   const p = `margin:0 0 14px;font-size:14px;line-height:22px;color:${c.muted};`;

@@ -1,5 +1,6 @@
 import Retell from 'retell-sdk';
 import type { JsonValue } from '@prisma/orm-postgres/target/codec-types';
+import { RETELL_API_KEY } from '@/lib/env';
 
 import { sendFollowUpEmail } from '@/app/lib/follow-up-email';
 import { db } from '@/src/prisma/db';
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
   // The raw text, not parsed JSON: the signature covers the exact bytes.
   const raw = await request.text();
   const signature = request.headers.get('x-retell-signature');
-  const apiKey = process.env.RETELL_API_KEY;
+  const apiKey = RETELL_API_KEY;
 
   if (
     !apiKey ||

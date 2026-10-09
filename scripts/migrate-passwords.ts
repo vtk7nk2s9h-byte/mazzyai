@@ -7,10 +7,10 @@
 // Safe to re-run: users who already have a credential account are skipped.
 // Reads DATABASE_URL, so point it at whichever database needs migrating.
 
-import 'dotenv/config';
 import { Pool } from 'pg';
+import { DATABASE_URL } from '../lib/env.ts';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({ connectionString: DATABASE_URL });
 
 // accountId is the user's own id for credential accounts — that's what
 // Better Auth writes on sign-up, and what it matches on sign-in.

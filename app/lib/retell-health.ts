@@ -1,5 +1,6 @@
 import https from 'node:https';
 import dns, { Resolver } from 'node:dns/promises';
+import { RETELL_API_KEY } from '@/lib/env';
 
 export type RetellHealth = { ok: boolean; message: string; ms?: number };
 
@@ -23,7 +24,7 @@ export async function checkRetell(): Promise<RetellHealth> {
 }
 
 async function probe(): Promise<RetellHealth> {
-  const apiKey = process.env.RETELL_API_KEY;
+  const apiKey = RETELL_API_KEY;
   if (!apiKey) return { ok: false, message: 'RETELL_API_KEY is not set' };
 
   const started = Date.now();

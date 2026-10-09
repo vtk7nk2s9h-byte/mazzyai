@@ -7,24 +7,26 @@
 // llm_id printed below is still live — reuse it rather than making an orphan.
 //
 // Prints the agent_id. Put that in .env as NEXT_PUBLIC_RETELL_AGENT_ID.
-import 'dotenv/config';
 import Retell from 'retell-sdk';
+import {
+  RETELL_API_KEY,
+  RETELL_VOICE_ID,
+  RETELL_WEBHOOK_URL,
+} from '../lib/env.ts';
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing ${name} — set it in .env`);
-  return value;
+// Both are optional app-wide — the voice features report their own absence —
+// but this script can do nothing without them. Voice ids live in the Retell
+// dashboard's voice library; there is no sensible default to guess.
+if (!RETELL_API_KEY || !RETELL_VOICE_ID) {
+  throw new Error('Set RETELL_API_KEY and RETELL_VOICE_ID in .env');
 }
 
-const client = new Retell({ apiKey: requireEnv('RETELL_API_KEY') });
-
-// Voice ids live in the Retell dashboard's voice library; there is no sensible
-// default, so it is required rather than guessed.
-const voiceId = requireEnv('RETELL_VOICE_ID');
+const client = new Retell({ apiKey: RETELL_API_KEY });
+const voiceId = RETELL_VOICE_ID;
 
 // Optional: Retell POSTs call_started / call_ended / call_analyzed here. An
 // agent-level webhook overrides the account-level one.
-const webhookUrl = process.env.RETELL_WEBHOOK_URL;
+const webhookUrl = RETELL_WEBHOOK_URL;
 
 // The site receptionist. Everything Jaroen is allowed to claim lives in the
 // "What you know" section — the guardrails point back at it, so adding a fact

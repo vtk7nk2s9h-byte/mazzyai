@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 
 import { withRoleAction } from '@/auth';
 import { checkTunnel } from '@/app/lib/retell-health';
+import { syncWebhookUrlToRetell } from '@/app/lib/retell-api';
 import { startTunnel, stopTunnel } from '@/app/lib/tunnel-process';
 
 const DEV_ONLY = { error: 'Tunnels are for local development only.' };
@@ -51,8 +52,18 @@ export const startTunnelAction = withRoleAction('SUPERUSER', async () => {
   }
 
   if (last.state === 'up') {
+    // The address is only useful to Retell if Retell is told about it, and a
+    // quick tunnel's hostname is new every time — so push it now rather than
+    // leaving the dashboard pointing at the last session's dead address.
+    const synced = await syncWebhookUrlToRetell(last.host!);
     revalidatePath('/dashboard/live-events');
-    return { ok: true as const, host: last.host };
+    return {
+      ok: true as const,
+      host: last.host,
+      message: synced.ok
+        ? "Retell's webhook URL now points here."
+        : `Retell was not updated (${synced.message}) — set the webhook URL by hand.`,
+    };
   }
 
   stopTunnel();

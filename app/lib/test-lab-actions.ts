@@ -7,6 +7,7 @@ import { withRoleAction } from '@/auth';
 import { sendFollowUpEmail } from '@/app/lib/follow-up-email';
 import { createMeeting } from '@/app/lib/meeting-actions';
 import { callSamples, emailSamples, meetingSamples } from '@/app/lib/test-lab-samples';
+import { RETELL_API_KEY } from '@/lib/env';
 import { db } from '@/src/prisma/db';
 
 // Each action takes the organization and the index of a sample, never the data
@@ -55,7 +56,7 @@ export const sendFakeCallAction = withRoleAction(
   'SUPERUSER',
   async (_me, organizationId: string, index: number): Promise<LabResult> => {
     if (process.env.NODE_ENV === 'production') return DEV_ONLY;
-    const apiKey = process.env.RETELL_API_KEY;
+    const apiKey = RETELL_API_KEY;
     if (!apiKey) return fail('RETELL_API_KEY is not set.');
     const sample = callSamples[index];
     if (!sample) return fail('Unknown variant.');

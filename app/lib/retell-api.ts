@@ -1,4 +1,5 @@
 import { db } from '@/src/prisma/db';
+import { RETELL_API_KEY } from '@/lib/env';
 
 // Server-side Retell plumbing shared by the server actions. Not a 'use server'
 // file: that kind may only export async functions that are public endpoints,
@@ -18,7 +19,7 @@ export async function retell(
   const res = await fetch(`https://api.retellai.com${path}`, {
     method,
     headers: {
-      Authorization: `Bearer ${process.env.RETELL_API_KEY}`,
+      Authorization: `Bearer ${RETELL_API_KEY}`,
       ...(!isForm && { 'Content-Type': 'application/json' }),
     },
     body:
@@ -91,4 +92,34 @@ export async function syncOrgToRetell(
     total: ids.length,
     failed: results.filter((r) => !r.ok).length,
   };
+}
+
+/**
+ * Points the web-call widget's agent at `host`'s webhook route, so a dev
+ * tunnel's address reaches Retell without anyone editing the dashboard.
+ *
+ * Quick tunnels get a new hostname every restart, and an agent's own
+ * `webhook_url` overrides the account-level one — so a stale value here is not
+ * a setting that merely looks wrong, it is the thing that silently stops every
+ * webhook.
+ *
+ * Deliberately this one agent and not every linked agent: one Retell account
+ * can serve a deployed environment as well as this machine, and a dev tunnel
+ * quietly taking over a live agent's webhook is the same silent failure in a
+ * more expensive place. Widen it only if the whole account is known to be
+ * local.
+ */
+export async function syncWebhookUrlToRetell(host: string) {
+  const agentId = process.env.NEXT_PUBLIC_RETELL_AGENT_ID;
+  const webhook_url = `https://${host}/api/retell/webhook`;
+  if (!agentId) {
+    return { ok: false as const, webhook_url, message: 'NEXT_PUBLIC_RETELL_AGENT_ID is not set.' };
+  }
+
+  const res = await retell('PATCH', `/update-agent/${agentId}`, { webhook_url }).catch(
+    (): { ok: false; message: string } => ({ ok: false, message: 'Could not reach Retell.' }),
+  );
+  return res.ok
+    ? { ok: true as const, webhook_url, message: undefined }
+    : { ok: false as const, webhook_url, message: res.message };
 }

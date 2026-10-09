@@ -1,3 +1,4 @@
+import { RETELL_API_KEY } from '@/lib/env';
 import { db } from '@/src/prisma/db';
 import type { RetellVoice } from '@/app/lib/retell-options';
 import { retell } from '@/app/lib/retell-api';
@@ -153,7 +154,7 @@ type RetellListResponse = {
  * `has_more` is false.
  */
 export async function fetchRetellAgents(): Promise<RetellAgent[]> {
-  const apiKey = process.env.RETELL_API_KEY;
+  const apiKey = RETELL_API_KEY;
   if (!apiKey) throw new Error('RETELL_API_KEY is not set.');
 
   const agents: RetellAgent[] = [];
@@ -208,7 +209,7 @@ export type RetellAgentDetail = {
 export async function fetchRetellAgentDetail(
   agentId: string,
 ): Promise<RetellAgentDetail> {
-  const apiKey = process.env.RETELL_API_KEY;
+  const apiKey = RETELL_API_KEY;
   if (!apiKey) throw new Error('RETELL_API_KEY is not set.');
 
   const res = await fetch(`https://api.retellai.com/get-agent/${agentId}`, {
@@ -299,7 +300,7 @@ export type RetellAgentFull = {
 export async function fetchRetellAgentFull(
   agentId: string,
 ): Promise<RetellAgentFull | null> {
-  const apiKey = process.env.RETELL_API_KEY;
+  const apiKey = RETELL_API_KEY;
   if (!apiKey) throw new Error('RETELL_API_KEY is not set.');
 
   const res = await fetch(`https://api.retellai.com/get-agent/${agentId}`, {
@@ -325,7 +326,7 @@ export type RetellLlm = {
 
 /** A Retell LLM, or null when it can't be read (the page then just omits the prompt). */
 export async function fetchRetellLlm(llmId: string): Promise<RetellLlm | null> {
-  const apiKey = process.env.RETELL_API_KEY;
+  const apiKey = RETELL_API_KEY;
   if (!apiKey) return null;
 
   const res = await fetch(`https://api.retellai.com/get-retell-llm/${llmId}`, {
@@ -350,7 +351,7 @@ export async function fetchAssignedAgent(retellAgentId: string) {
 
 /** Voices for the create-agent picker, via GET /list-voices (a bare array). */
 export async function fetchRetellVoices(): Promise<RetellVoice[]> {
-  const apiKey = process.env.RETELL_API_KEY;
+  const apiKey = RETELL_API_KEY;
   if (!apiKey) throw new Error('RETELL_API_KEY is not set.');
 
   const res = await fetch('https://api.retellai.com/list-voices', {

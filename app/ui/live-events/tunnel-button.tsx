@@ -16,7 +16,13 @@ export default function TunnelButton({ mode }: { mode: 'start' | 'stop' }) {
       if ('error' in result && result.error) {
         toastError(mode === 'start' ? 'Tunnel not started' : 'Tunnel not stopped', result.error);
       } else if (mode === 'start' && 'host' in result) {
-        toastSuccess('Tunnel is up', `Webhook URL: https://${result.host}/api/retell/webhook`);
+        // The action also pushes the address to Retell, and whether that
+        // succeeded is the part worth reading — the URL alone used to look like
+        // success even when no agent had been told about it.
+        toastSuccess(
+          'Tunnel is up',
+          `${'message' in result ? `${result.message} ` : ''}Webhook URL: https://${result.host}/api/retell/webhook`,
+        );
       } else {
         toastSuccess('Tunnel stopped');
       }

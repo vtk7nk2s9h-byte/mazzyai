@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { withRoleAction } from '@/auth';
 import { fetchAgentsOrganizationId } from '@/app/lib/agent-data';
 import { retell } from '@/app/lib/retell-api';
+import { RETELL_API_KEY } from '@/lib/env';
 import { db } from '@/src/prisma/db';
 
 // Bigger files fit in Retell (50MB) but not in a server action body, which
@@ -46,7 +47,7 @@ const UrlSchema = z.object({
  * all of the organization's agents until it is assigned to one.
  */
 export const addKnowledge = withRoleAction('USER', async (me, form: FormData) => {
-  if (!process.env.RETELL_API_KEY) return { error: 'RETELL_API_KEY is not set.' };
+  if (!RETELL_API_KEY) return { error: 'RETELL_API_KEY is not set.' };
 
   const organizationId = await fetchAgentsOrganizationId(me.id);
   if (!organizationId) {

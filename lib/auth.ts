@@ -6,6 +6,7 @@ import { adminAc, userAc } from 'better-auth/plugins/admin/access';
 import bcrypt from 'bcrypt';
 import { Pool } from 'pg';
 import { db } from '@/src/prisma/db';
+import { DATABASE_URL } from '@/lib/env';
 import { checkRateLimit } from '@/lib/rate-limit';
 import {
   escapeHtml,
@@ -25,7 +26,7 @@ const BCRYPT_ROUNDS = 12;
 const OTP_EXPIRES_IN_SECONDS = 10 * 60;
 
 // Shared with the rate limiter, which needs raw SQL Prisma 8 doesn't offer.
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({ connectionString: DATABASE_URL });
 
 /**
  * Better Auth server instance. Talks to Postgres through its own pg Pool
@@ -36,8 +37,10 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
  */
 export const auth = betterAuth({
   database: pool,
-  // Reads BETTER_AUTH_URL, and falls back to AUTH_SECRET for the secret, so
-  // the existing .env key keeps working.
+  // Signing key and base URL come from the environment: Better Auth reads
+  // BETTER_AUTH_SECRETS (a versioned list — see .env.example, it rotates a
+  // key without signing everyone out), then BETTER_AUTH_SECRET, then
+  // AUTH_SECRET, and BETTER_AUTH_URL for the links it builds.
   advanced: {
     // Ids are text columns with no database default (the contract's uuid()
     // is client-side). Better Auth's 'uuid' option leaves the id to the

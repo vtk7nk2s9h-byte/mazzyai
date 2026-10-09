@@ -1,4 +1,5 @@
 import "../app/ui/global.css";
+import { headers } from "next/headers";
 import { currentUser } from "@/auth";
 import { Header } from "@/components/ui/header-3";
 import MaroonDataWires from "@/components/ui/maroon-data-wires";
@@ -25,6 +26,10 @@ export default async function RootLayout({
   // every route dynamic — acceptable because proxy.ts already runs auth on
   // each request, so nothing in this app was being served statically.
   const me = await currentUser();
+  // proxy.ts mints this per request and names it in the CSP. Next stamps it on
+  // the scripts it renders itself, but not on the hand-written one below, which
+  // an enforced script-src would otherwise refuse to run.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     // The head script sets data-theme/class on <html> before React hydrates,
@@ -36,6 +41,7 @@ export default async function RootLayout({
             server copy already ran during HTML parsing. */}
         <script
           type={typeof window === "undefined" ? "text/javascript" : "text/plain"}
+          nonce={nonce}
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: themeScript }}
         />

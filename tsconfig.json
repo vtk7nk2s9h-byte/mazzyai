@@ -21,7 +21,9 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".",
+    // No "baseUrl": it is deprecated and stops working in TypeScript 7.
+    // Without it, "paths" resolves relative to this file's directory, which is
+    // the project root either way. Next 16 handles this (pathsBasePath).
     "paths": {
       "@/*": ["./*"]
     },

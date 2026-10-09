@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { EMAIL_FROM, RESEND_API_KEY } from '@/lib/env';
 
 // Reads RESEND_API_KEY from the environment. Never import this from a
 // 'use client' file — like call-data.ts, it must stay server-side, or the
@@ -10,7 +11,7 @@ import { Resend } from 'resend';
 // has set RESEND_API_KEY.
 let resend: Resend | undefined;
 function getResend(): Resend {
-  return (resend ??= new Resend(process.env.RESEND_API_KEY));
+  return (resend ??= new Resend(RESEND_API_KEY));
 }
 
 const DEFAULT_FROM = 'MazzyAI <onboarding@resend.dev>';
@@ -112,7 +113,7 @@ export type SendEmailInput = {
  */
 export async function sendEmail({ to, subject, html, text }: SendEmailInput) {
   const { error } = await getResend().emails.send({
-    from: process.env.EMAIL_FROM || DEFAULT_FROM,
+    from: EMAIL_FROM ?? DEFAULT_FROM,
     to,
     subject,
     html,
