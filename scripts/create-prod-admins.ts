@@ -7,10 +7,13 @@
 // The credentials are read straight from process.env rather than added to
 // lib/env.ts: the app itself never reads them, they are supplied once for this
 // run, and making them `required` there would break every other entry point.
+// They are plain variables: put them in .env (gitignored) or the shell, and
+// pass the production DATABASE_URL explicitly — .env's own points at local
+// Docker, and dotenv never overrides a variable that is already set.
 //
-//   PROD_SUPERUSER_EMAIL=you@example.com PROD_SUPERUSER_PASSWORD=... \
-//   PROD_ADMIN_PASSWORD=... DATABASE_URL=<production> \
-//   node scripts/create-prod-admins.ts
+//   PROD_SUPERUSER_EMAIL, PROD_SUPERUSER_PASSWORD,
+//   PROD_ADMIN_EMAIL, PROD_ADMIN_PASSWORD   (PROD_SUPERUSER_NAME optional)
+//   DATABASE_URL=<production> node scripts/create-prod-admins.ts
 //
 // Re-running is safe: it re-asserts the role and resets the password, so a
 // demoted or locked-out account recovers without manual SQL.
@@ -20,12 +23,6 @@ import { db } from '../src/prisma/db.ts';
 
 // Same work factor as lib/auth.ts, so these hashes match what the app writes.
 const BCRYPT_ROUNDS = 12;
-
-// The impersonation hook in lib/auth.ts allows switching into this address and
-// no other (ADMIN_ACCOUNT_EMAIL, lib/auth.ts:20). Spelled out again here
-// because that module resolves '@/' path aliases and so cannot be imported by
-// a plain `node` script — keep the two in step.
-const ADMIN_EMAIL = 'admin@mazzyai.com';
 
 function required(name: string): string {
   const value = process.env[name]?.trim();
@@ -43,7 +40,11 @@ const accounts = [
     systemRole: 'SUPERUSER',
   },
   {
-    email: ADMIN_EMAIL,
+    // The impersonation hook only lets a superuser switch into
+    // ADMIN_ACCOUNT_EMAIL (lib/auth.ts:20), so PROD_ADMIN_EMAIL must equal it
+    // for the switch to work. lib/auth.ts resolves '@/' aliases and cannot be
+    // imported by a plain `node` script, hence the manual match.
+    email: required('PROD_ADMIN_EMAIL'),
     password: required('PROD_ADMIN_PASSWORD'),
     name: 'Admin',
     systemRole: 'ADMIN',
