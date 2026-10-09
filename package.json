@@ -8,7 +8,8 @@
     "lint": "eslint .",
     "contract:emit": "prisma contract emit",
     "db:seed": "node src/prisma/seed.ts",
-    "retell:create-agent": "node scripts/create-retell-agent.ts"
+    "retell:create-agent": "node scripts/create-retell-agent.ts",
+    "db:create-admins": "node scripts/create-prod-admins.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
