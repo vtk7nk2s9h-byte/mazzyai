@@ -198,6 +198,27 @@ body {
     }
   }
 
+  /* The intro's example-call tabs: the active one is outlined by a ring that
+     fills clockwise from the top as the call plays, set by --tab-progress
+     (an angle). Same masking as .glow-ring, but a hard stop instead of a
+     travelling arc, so the edge only ever shows how far the call has got. */
+  .tab-ring {
+    padding: 2px;
+    background: conic-gradient(
+      from 0deg,
+      #ff2e43 var(--tab-progress, 0deg),
+      transparent 0
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-rule-shine {
       animation: none;
@@ -469,14 +490,6 @@ input[type='number']::-webkit-outer-spin-button {
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
   }
-}
-
-/* The intro's own Pause button stops all of it (WCAG 2.2.2: moving content
-   that starts on its own needs a way to stop it). */
-[data-motion='paused'] .hero-eq > span,
-[data-motion='paused'] .hero-marquee,
-[data-motion='paused'] .hero-ring {
-  animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {

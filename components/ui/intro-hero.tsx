@@ -13,16 +13,20 @@ import {
   BellRing,
   BookOpenCheck,
   CalendarCheck2,
+  Car,
+  ChevronRight,
   Clock3,
   FileText,
   Moon,
-  Pause,
+  PawPrint,
   PhoneCall,
   PhoneForwarded,
   PhoneIncoming,
-  Play,
+  Scale,
+  Scissors,
   ScrollText,
   Stethoscope,
+  Sun,
   Sunrise,
   Sunset,
   UserPlus,
@@ -50,7 +54,7 @@ type Scene = {
   sector: string;
   icon: LucideIcon;
   business: string;
-  /** When the call comes in: one each for morning, evening and night. */
+  /** When the call comes in, with the icon for that time of day. */
   time: string;
   timeIcon: LucideIcon;
   caller: string;
@@ -129,6 +133,94 @@ const SCENES: Scene[] = [
     ],
     summary:
       'At 23:47 a caller reports a burst pipe to Van Dijk Plumbing. The agent alerts the on-call engineer, takes the address, logs the call and saves the caller as a contact.',
+  },
+  {
+    sector: 'Hair salon',
+    icon: Scissors,
+    business: 'Studio Lumen',
+    time: '12:20',
+    timeIcon: Sun,
+    caller: 'Priya',
+    lines: [
+      ['agent', 'Studio Lumen, hello! How can I help?'],
+      ['caller', "Hi, I'd like a cut and colour this Saturday."],
+      ['agent', 'Marta has 11:00 or 14:30, about two hours. Which one?'],
+      ['caller', '11:00 works.'],
+      ['agent', "Done: Saturday at 11:00 with Marta. We'll text you a reminder."],
+    ],
+    outcomes: [
+      { icon: CalendarCheck2, title: 'Appointment booked', detail: 'Sat 11:00 · cut and colour' },
+      { icon: FileText, title: 'Call logged', detail: 'Service and stylist noted' },
+      { icon: UserPlus, title: 'Client saved', detail: 'Priya added to your contacts' },
+    ],
+    summary:
+      'At lunchtime a caller asks Studio Lumen for a cut and colour on Saturday. The agent offers two slots, books 11:00 with Marta, logs the call and saves the client as a contact.',
+  },
+  {
+    sector: 'Law firm',
+    icon: Scale,
+    business: 'Brandt & Co. Solicitors',
+    time: '17:35',
+    timeIcon: Sunset,
+    caller: 'Tom',
+    lines: [
+      ['agent', 'Brandt and Co. Solicitors, good evening. How can I help?'],
+      ['caller', "My landlord wants me out and I'm not sure he can."],
+      ['agent', 'Ms. Brandt handles tenancy disputes. She is free Tuesday at 10:30.'],
+      ['caller', 'Tuesday works. Can I send her the notice?'],
+      ['agent', "Yes: I'm emailing you a secure link now. See you Tuesday."],
+    ],
+    outcomes: [
+      { icon: CalendarCheck2, title: 'Consultation booked', detail: 'Tue 10:30 · Ms. Brandt' },
+      { icon: FileText, title: 'Call logged', detail: 'Matter type: tenancy dispute' },
+      { icon: UserPlus, title: 'Client saved', detail: 'Tom added to your contacts' },
+    ],
+    summary:
+      'After hours a caller tells Brandt and Co. his landlord wants him out. The agent books a Tuesday consultation with Ms. Brandt, sends a secure upload link, logs the call and saves the caller as a contact.',
+  },
+  {
+    sector: 'Vet',
+    icon: PawPrint,
+    business: 'Greenfield Veterinary',
+    time: '21:15',
+    timeIcon: Moon,
+    caller: 'Hannah',
+    lines: [
+      ['agent', 'Greenfield Veterinary, out-of-hours line. What is happening?'],
+      ['caller', 'My dog just ate a whole bar of dark chocolate!'],
+      ['agent', "That needs a vet tonight. I'm alerting Dr. Okafor. How big is he?"],
+      ['caller', "He's a beagle, about ten kilos."],
+      ['agent', 'Thanks. Dr. Okafor will call you within minutes. Please stay by the phone.'],
+    ],
+    outcomes: [
+      { icon: BellRing, title: 'Vet alerted', detail: 'Marked urgent · chocolate ingestion' },
+      { icon: FileText, title: 'Call logged', detail: 'Breed and weight captured' },
+      { icon: UserPlus, title: 'Owner saved', detail: 'Hannah added to your contacts' },
+    ],
+    summary:
+      'At 21:15 a caller says her dog has eaten dark chocolate. The agent alerts the on-call vet, notes the breed and weight, logs the call and saves the owner as a contact.',
+  },
+  {
+    sector: 'Garage',
+    icon: Car,
+    business: 'Apex Auto Repair',
+    time: '13:30',
+    timeIcon: Sun,
+    caller: 'Luis',
+    lines: [
+      ['agent', 'Apex Auto Repair, good afternoon. How can I help?'],
+      ['caller', 'My brakes are squealing. Can you look at it soon?'],
+      ['agent', 'We can take it Wednesday at 8:00. Is that too early?'],
+      ['caller', "No, that's perfect."],
+      ['agent', "Booked: Wednesday at 8:00 for a brake check. What's your registration?"],
+    ],
+    outcomes: [
+      { icon: CalendarCheck2, title: 'Booked into your agenda', detail: 'Wed 08:00 · brake check' },
+      { icon: FileText, title: 'Call logged', detail: 'Symptoms and registration noted' },
+      { icon: UserPlus, title: 'Customer saved', detail: 'Luis added to your contacts' },
+    ],
+    summary:
+      'A caller reports squealing brakes at Apex Auto Repair. The agent books a Wednesday 8:00 brake check, takes the registration, logs the call and saves the customer as a contact.',
   },
 ];
 
@@ -298,20 +390,16 @@ function openAssistant() {
  * playing out beside it, then a ticker of the businesses it is built for.
  *
  * It sits above ScrollGlobe in the page and above its fixed globe layer
- * (z-10), so the globe shows behind it rather than over it. One Pause button
- * stops everything that moves here: the call, its voice bars and the ticker.
+ * (z-10), so the globe shows behind it rather than over it.
  */
 export default function IntroHero() {
-  const [paused, setPaused] = useState(false);
-
   // overflow-x-clip: the glows reach past the edges on a phone. Clip rather
   // than hidden, which would make the section a scroll container.
   return (
     <section
       id="intro"
       aria-labelledby="intro-heading"
-      data-motion={paused ? 'paused' : 'running'}
-      className="group/intro relative z-10 flex min-h-[calc(100svh-5rem)] flex-col overflow-x-clip"
+      className="relative z-10 flex min-h-[calc(100svh-5rem)] flex-col overflow-x-clip"
     >
       {/* Light in the room: wine from the top left, the brand red behind the
           call card. Behind everything else in the section. */}
@@ -328,7 +416,7 @@ export default function IntroHero() {
           left and the call spans both rows on the right. */}
       <div className="hero-grid mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 gap-12 px-6 pb-14 pt-10 md:px-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:gap-x-16 lg:gap-y-10 lg:pb-12 lg:pt-12 lg:[grid-template-areas:'copy_call'_'proof_call']">
         <Pitch />
-        <LiveCall paused={paused} onTogglePause={() => setPaused((p) => !p)} />
+        <LiveCall />
         <Proof />
       </div>
 
@@ -360,7 +448,7 @@ function Pitch() {
         )}
       >
         <span aria-hidden="true" className="relative flex h-2 w-2">
-          <span className="absolute inset-0 animate-ping rounded-full bg-brand-red-lit opacity-60 group-data-[motion=paused]/intro:[animation-play-state:paused] motion-reduce:animate-none" />
+          <span className="absolute inset-0 animate-ping rounded-full bg-brand-red-lit opacity-60 motion-reduce:animate-none" />
           <span className="relative h-2 w-2 rounded-full bg-brand-red-lit shadow-[0_0_10px_rgba(255,46,67,0.9)]" />
         </span>
         AI voice agent · Answers 24/7
@@ -420,7 +508,7 @@ function Pitch() {
           <button
             type="button"
             onClick={openAssistant}
-            className="inline-flex h-12 items-center gap-3 rounded-full bg-gradient-to-b from-[#ff3b4f] to-[#b51c2e] pl-2 pr-6 text-sm font-semibold text-white shadow-[0_14px_40px_-12px_rgba(255,46,67,0.75),inset_0_1px_0_rgba(255,255,255,0.25)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_48px_-12px_rgba(255,46,67,0.95),inset_0_1px_0_rgba(255,255,255,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red-lit focus-visible:ring-offset-2 focus-visible:ring-offset-[#090203] active:translate-y-0"
+            className="inline-flex h-12 items-center gap-3 rounded-full bg-gradient-to-b from-maroon-400 to-maroon-600 pl-2 pr-6 text-sm font-semibold text-white shadow-[0_14px_40px_-12px_rgba(140,25,37,0.8),inset_0_1px_0_rgba(255,255,255,0.18)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_48px_-12px_rgba(156,39,57,0.95),inset_0_1px_0_rgba(255,255,255,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red-lit focus-visible:ring-offset-2 focus-visible:ring-offset-[#090203] active:translate-y-0"
           >
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/15">
               <PhoneCall className="h-4 w-4" strokeWidth={2} />
@@ -432,8 +520,20 @@ function Pitch() {
             onClick={(e: MouseEvent<HTMLAnchorElement>) => {
               if (scrollToId(EXPLORE_ID)) e.preventDefault();
             }}
-            className="group inline-flex h-12 items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.04] px-6 text-sm font-semibold text-gray-800 backdrop-blur-md transition-colors hover:border-white/25 hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400"
+            className="group relative inline-flex h-12 items-center gap-2 rounded-full border border-white/[0.12] bg-white/[0.04] px-6 text-sm font-semibold text-gray-800 backdrop-blur-md transition-colors hover:border-white/25 hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400"
           >
+            {/* The call card's border: a blurred ring for the glow, then the
+                crisp ring with its travelling arc. */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -inset-[3px] rounded-[inherit] opacity-70 blur-[10px]"
+            >
+              <span className="glow-ring block h-full w-full rounded-[inherit] [--ring-w:3px]" />
+            </span>
+            <span
+              aria-hidden="true"
+              className="glow-ring pointer-events-none absolute -inset-px z-10 rounded-[inherit]"
+            />
             Find your use case
             <ArrowDown
               className="h-4 w-4 text-gray-500 transition-[color,transform] duration-200 group-hover:translate-y-0.5 group-hover:text-brand-red-lit"
@@ -441,8 +541,8 @@ function Pitch() {
             />
           </a>
         </div>
-        <p className="mt-3.5 text-xs text-gray-500">
-          Try it right here in your browser. It will ask for your microphone.
+        <p className="mt-5 pl-3 text-xs text-white">
+          Try it right here in your browser. It will ask for your microphone permission.
         </p>
       </div>
 
@@ -486,17 +586,13 @@ function Proof() {
 /*  The example call                                                   */
 /* ------------------------------------------------------------------ */
 
-function LiveCall({
-  paused,
-  onTogglePause,
-}: {
-  paused: boolean;
-  onTogglePause: () => void;
-}) {
+function LiveCall() {
   const [clock, dispatch] = useReducer(advance, { scene: 0, t: 0 });
   const [reduced, setReduced] = useState(false);
   const [onScreen, setOnScreen] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
   const card = useRef<HTMLDivElement>(null);
+  const strip = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -517,7 +613,7 @@ function LiveCall({
     return () => io.disconnect();
   }, []);
 
-  const running = !paused && !reduced && onScreen;
+  const running = !reduced && onScreen;
   useEffect(() => {
     if (!running) return;
     let last = performance.now();
@@ -536,16 +632,64 @@ function LiveCall({
   // Reduced motion shows each call finished and still; the tabs switch calls.
   const t = reduced ? tl.settled : clock.t;
   const frame = frameAt(tl, t);
-  const progress = Math.min(1, t / tl.total);
+  // To `settled`, not `total`: the active tab's ring closes the moment the call
+  // has finished, instead of running on through the hold before the next one.
+  const progress = Math.min(1, t / tl.settled);
 
-  // Picked while still (paused or reduced motion), a call opens finished, so
-  // there is something to read rather than a phone frozen mid-ring.
+  // Picked under reduced motion, a call opens finished, so there is something
+  // to read rather than a phone frozen mid-ring.
   const pick = (i: number) =>
     dispatch({
       type: 'pick',
       scene: i,
-      t: paused || reduced ? TIMELINES[i].settled : 0,
+      t: reduced ? TIMELINES[i].settled : 0,
     });
+
+  const behavior = reduced ? 'auto' : 'smooth';
+
+  // The tab strip shows three calls; the rest are a scroll or a swipe away.
+  // Track whether the last one is in view, so the button knows which way to go.
+  useEffect(() => {
+    const el = strip.current;
+    if (!el) return;
+    const sync = () =>
+      setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+    sync();
+    el.addEventListener('scroll', sync, { passive: true });
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', sync);
+      ro.disconnect();
+    };
+  }, []);
+
+  // When the demo moves on by itself, bring the next call's tab into view.
+  useEffect(() => {
+    const el = strip.current;
+    const tab = el?.children[clock.scene];
+    if (!el || !(tab instanceof HTMLElement)) return;
+    const visible =
+      tab.offsetLeft >= el.scrollLeft &&
+      tab.offsetLeft + tab.offsetWidth <= el.scrollLeft + el.clientWidth + 1;
+    if (!visible) el.scrollTo({ left: tab.offsetLeft, behavior });
+  }, [clock.scene, behavior]);
+
+  // One page on: the first tab that isn't fully in view goes to the left edge.
+  // From the end, back to the start.
+  const scrollTabs = () => {
+    const el = strip.current;
+    if (!el) return;
+    const next = Array.from(el.children).find(
+      (c) =>
+        c instanceof HTMLElement &&
+        c.offsetLeft + c.offsetWidth > el.scrollLeft + el.clientWidth + 1,
+    );
+    el.scrollTo({
+      left: atEnd || !(next instanceof HTMLElement) ? 0 : next.offsetLeft,
+      behavior,
+    });
+  };
 
   const TimeIcon = scene.timeIcon;
   const amp =
@@ -709,12 +853,13 @@ function LiveCall({
             </div>
           </div>
 
-          {/* Pick a call, or stop the motion. */}
+          {/* Pick a call, or scroll on to more businesses. */}
           <div className="mt-5 flex items-center gap-2 border-t border-white/[0.06] pt-4">
             <div
+              ref={strip}
               role="group"
               aria-label="Example calls"
-              className="flex min-w-0 flex-1 gap-1.5"
+              className="relative flex min-w-0 flex-1 snap-x snap-mandatory gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
               {SCENES.map((s, i) => {
                 const active = i === clock.scene;
@@ -727,7 +872,9 @@ function LiveCall({
                     aria-pressed={active}
                     aria-label={s.sector}
                     className={cn(
-                      'relative flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-full border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red-lit',
+                      // Three to a view whatever the count: a third of the strip
+                      // less its two gaps, as the old three-tab row was.
+                      'relative flex h-10 basis-[calc((100%-0.75rem)/3)] shrink-0 snap-start items-center justify-center gap-1.5 overflow-hidden rounded-full border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red-lit',
                       active
                         ? 'border-brand-red-lit/50 bg-maroon-500/30 text-white'
                         : 'border-white/[0.08] bg-white/[0.03] text-gray-500 hover:border-white/20 hover:text-gray-800',
@@ -743,32 +890,34 @@ function LiveCall({
                       {s.sector}
                     </span>
                     {active && (
-                      // How far through this call the demo is.
+                      // How far through this call the demo is: a ring drawn
+                      // round the tab, closed when the call has finished.
                       <span
                         aria-hidden="true"
-                        className="absolute inset-x-4 bottom-0 h-[2px] origin-left rounded-full bg-brand-red-lit"
-                        style={{ transform: `scaleX(${progress})` }}
+                        className="tab-ring pointer-events-none absolute inset-0 rounded-[inherit]"
+                        style={
+                          { '--tab-progress': `${progress * 360}deg` } as CSSProperties
+                        }
                       />
                     )}
                   </button>
                 );
               })}
             </div>
-            {/* Nothing moves under reduced motion, so there is nothing to pause. */}
-            {!reduced && (
-              <button
-                type="button"
-                onClick={onTogglePause}
-                aria-label={paused ? 'Play the animations' : 'Pause the animations'}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-gray-500 transition-colors hover:border-white/20 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red-lit"
-              >
-                {paused ? (
-                  <Play className="h-4 w-4" strokeWidth={2} />
-                ) : (
-                  <Pause className="h-4 w-4" strokeWidth={2} />
+            <button
+              type="button"
+              onClick={scrollTabs}
+              aria-label={atEnd ? 'Back to the first calls' : 'More example calls'}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.03] text-gray-500 transition-colors hover:border-white/20 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-red-lit"
+            >
+              <ChevronRight
+                className={cn(
+                  'h-4 w-4 transition-transform duration-200',
+                  atEnd && 'rotate-180',
                 )}
-              </button>
-            )}
+                strokeWidth={2}
+              />
+            </button>
           </div>
         </div>
       </figure>
@@ -860,8 +1009,8 @@ function Bubble({
 
 /**
  * Every kind of business in the use-case explorer, drifting past in a glass
- * band along the bottom of the intro. Hover pauses it; so does the intro's
- * Pause button. Screen readers get one sentence instead of sixty names.
+ * band along the bottom of the intro. Hover pauses it. Screen readers get one
+ * sentence instead of sixty names.
  */
 function Ticker() {
   const loop = [...TICKER, ...TICKER];

@@ -135,8 +135,11 @@ export async function requestEmailCode(
   }
 
   try {
+    // Headers go along so lib/rate-limit.ts can see the caller's IP; without
+    // them every request is filed under "unknown" and shares one bucket.
     await auth.api.sendVerificationOTP({
       body: { email: parsed.data.email, type: 'sign-in' },
+      headers: await headers(),
     });
   } catch (error) {
     if (error instanceof APIError && error.status === 'TOO_MANY_REQUESTS') {
