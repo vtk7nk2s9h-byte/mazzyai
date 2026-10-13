@@ -946,7 +946,7 @@ function CallStatus({ frame }: { frame: ReturnType<typeof frameAt> }) {
   }
   return (
     <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-success-lit/30 bg-success/15 px-2.5 py-1 text-[11px] font-medium text-success-lit">
-      <span className="h-1.5 w-1.5 rounded-full bg-success-lit shadow-[0_0_8px_hsl(var(--success-lit))]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-success-lit shadow-[0_0_8px_hsl(var(--success-lit))] motion-safe:animate-pulse" />
       Live <span className="tabular-nums">{clock}</span>
     </span>
   );

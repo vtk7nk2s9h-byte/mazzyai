@@ -50,7 +50,7 @@ export default function RequestCard({
   }
 
   return (
-    <section className="relative rounded-lg bg-gray-50 p-5">
+    <section className="relative rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-5">
       <button
         type="button"
         onClick={refresh}

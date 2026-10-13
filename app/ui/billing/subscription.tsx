@@ -11,11 +11,11 @@ import { toastError, toastSuccess } from '@/hooks/use-toast';
 
 // Green is live, yellow is at risk or not yet billing, red is not running.
 const dot: Record<string, string> = {
-  ACTIVE: 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.7)]',
-  TRIALING: 'bg-amber-300 shadow-[0_0_6px_rgba(252,211,77,0.6)]',
-  PAST_DUE: 'bg-amber-300 shadow-[0_0_6px_rgba(252,211,77,0.6)]',
-  CANCELED: 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.7)]',
-  UNPAID: 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.7)]',
+  ACTIVE: 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.7)] motion-safe:animate-pulse',
+  TRIALING: 'bg-amber-300 shadow-[0_0_6px_rgba(252,211,77,0.6)] motion-safe:animate-pulse',
+  PAST_DUE: 'bg-amber-300 shadow-[0_0_6px_rgba(252,211,77,0.6)] motion-safe:animate-pulse',
+  CANCELED: 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.7)] motion-safe:animate-pulse',
+  UNPAID: 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.7)] motion-safe:animate-pulse',
 };
 
 const day = (iso: string) =>

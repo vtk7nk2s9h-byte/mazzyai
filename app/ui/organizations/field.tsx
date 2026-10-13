@@ -21,7 +21,7 @@ export function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-lg bg-gray-50 p-5">
+    <section className="rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -73,8 +73,8 @@ export function Toggle({ on }: { on: boolean }) {
         aria-hidden
         className={`h-1.5 w-1.5 rounded-full ${
           on
-            ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]'
-            : 'bg-brand-red-lit shadow-[0_0_8px_rgba(255,46,67,0.8)]'
+            ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)] motion-safe:animate-pulse'
+            : 'bg-brand-red-lit shadow-[0_0_8px_rgba(255,46,67,0.8)] motion-safe:animate-pulse'
         }`}
       />
 

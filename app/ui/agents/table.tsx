@@ -73,7 +73,7 @@ export async function RetellAgentsTable({
     agents = await fetchRetellAgents();
   } catch (error) {
     return (
-      <div className="mt-6 rounded-lg bg-gray-50 p-6 text-sm text-red-600">
+      <div className="mt-6 rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-6 text-sm text-red-600">
         {error instanceof Error ? error.message : 'Could not reach Retell.'}
       </div>
     );
@@ -100,7 +100,7 @@ export async function RetellAgentsTable({
 
   if (agents.length === 0) {
     return (
-      <div className="mt-6 rounded-lg bg-gray-50 p-10 text-center text-sm text-gray-500">
+      <div className="mt-6 rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-10 text-center text-sm text-gray-500">
         No agents on this Retell account.
       </div>
     );
@@ -133,7 +133,7 @@ export async function RetellAgentsTable({
                 return (
                 <tr
                   key={a.agent_id}
-                  className="border-b last-of-type:border-none"
+                  className="row-glow border-b last-of-type:border-none"
                 >
                   <td className="whitespace-nowrap px-4 py-3 font-medium">
                     <span className="inline-flex items-center gap-2">
@@ -273,7 +273,7 @@ export default async function AgentsTable({
 
   if (agents.length === 0) {
     return (
-      <div className="mt-6 rounded-lg bg-gray-50 p-10 text-center text-sm text-gray-500">
+      <div className="mt-6 rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-10 text-center text-sm text-gray-500">
         No agents yet. Run <code className="text-gray-600">pnpm db:seed</code>{' '}
         to add sample data.
       </div>
@@ -284,7 +284,7 @@ export default async function AgentsTable({
     <>
     <div className="mt-6 flow-root overflow-x-auto">
       <div className="inline-block min-w-full align-middle">
-        <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
+        <div className="rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-2 md:pt-0">
           <div className="md:hidden">
             {agents.map((agent) => (
               <div
@@ -343,11 +343,11 @@ export default async function AgentsTable({
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-gray-100">
+            <tbody>
               {agents.map((agent) => (
                 <tr
                   key={agent.id}
-                  className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
+                  className="row-glow w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                 >
                   <td className="whitespace-nowrap py-3 pl-6 pr-3">
                     <p className="inline-flex items-center gap-2 font-medium">

@@ -46,10 +46,10 @@ const STATES: Record<
   'idle' | 'thinking' | 'listening' | 'talking',
   { energy: number; speed: number }
 > = {
-  idle: { energy: 0.12, speed: 0.25 },
-  thinking: { energy: 0.4, speed: 1.1 },
-  listening: { energy: 0.5, speed: 0.5 },
-  talking: { energy: 1, speed: 0.9 },
+  idle: { energy: 0.12, speed: 0.34 },
+  thinking: { energy: 0.4, speed: 1.45 },
+  listening: { energy: 0.5, speed: 0.66 },
+  talking: { energy: 1, speed: 1.2 },
 };
 
 const VERTEX = /* glsl */ `

@@ -108,19 +108,40 @@ function NavItem({ link, pathname }: { link: NavLink; pathname: string }) {
       // The label is hidden when the sidebar is collapsed.
       title={link.name}
       className={clsx(
-        // No hover fill: the label lights up instead, so the sidebar
-        // stays flat and only type and icon carry state.
-        'group flex h-9 grow items-center justify-center gap-2.5 rounded-lg px-2 text-xs font-medium transition-colors md:grow-0 md:justify-start md:group-data-[sidebar=collapsed]/sb:justify-center',
-        active ? 'text-gray-900' : 'text-gray-500',
+        // No hover fill: the label lights up instead. Only the active link
+        // gets a background, so the sidebar stays flat otherwise.
+        'group relative isolate flex h-10 grow items-center justify-center gap-2.5 rounded-lg px-2 text-[13px] font-medium transition-colors md:grow-0 md:justify-start md:pl-4 md:group-data-[sidebar=collapsed]/sb:justify-center md:group-data-[sidebar=collapsed]/sb:px-2',
+        // A small red light on the left edge (::before) and a wash of it
+        // spilling across the link (::after) — the only things that tint the
+        // background. Both are always rendered and fade/grow in or out, so
+        // moving between links hands the light over instead of snapping it.
+        // The wash is a layer because a gradient can't be transitioned itself.
+        'before:absolute before:left-0 before:top-1/2 before:hidden before:h-[18px] before:w-[3px] before:-translate-y-1/2 before:scale-y-0 before:rounded-full before:bg-brand-red-lit before:opacity-0 before:shadow-[0_0_8px_2px_rgba(255,46,67,0.75),0_0_18px_4px_rgba(255,46,67,0.35)] before:transition-[transform,opacity] before:duration-300 before:ease-out md:before:block',
+        'after:pointer-events-none after:absolute after:inset-0 after:-z-10 after:rounded-[inherit] after:bg-[linear-gradient(90deg,rgba(255,46,67,0.18),rgba(255,46,67,0.04)_70%,transparent)] after:opacity-0 after:transition-opacity after:duration-300 after:ease-out',
+        'motion-reduce:before:transition-none motion-reduce:after:transition-none',
+        active
+          ? 'text-gray-900 before:scale-y-100 before:opacity-100 after:opacity-100'
+          : // The same light at half height and opacity, and the same wash
+            // at 40% — a preview of the active link. The bar scales with its
+            // glow included.
+            'text-gray-500 hover:before:scale-y-50 hover:before:opacity-60 hover:after:opacity-40',
       )}
     >
       <LinkIcon
         className={clsx(
-          'w-[17px] shrink-0 transition-colors',
+          'w-[19px] shrink-0 transition-colors',
           active ? 'text-brand-red-lit' : 'group-hover:text-brand-red-lit',
         )}
       />
-      <p className="hidden transition-[color,text-shadow] duration-200 group-hover:text-brand-red-lit group-hover:[text-shadow:0_0_12px_rgba(255,46,67,0.55)] md:block md:group-data-[sidebar=collapsed]/sb:hidden">
+      <p
+        className={clsx(
+          // The label leans away from the light bar on hover, and stays
+          // there while the link is the page. Same offset for both, so
+          // hovering the active link doesn't pull it back.
+          'hidden transition-[color,text-shadow,transform] duration-300 ease-out group-hover:translate-x-1 group-hover:text-brand-red-lit group-hover:[text-shadow:0_0_12px_rgba(255,46,67,0.55)] motion-reduce:transition-none md:block md:group-data-[sidebar=collapsed]/sb:hidden',
+          active && 'translate-x-1',
+        )}
+      >
         {link.name}
       </p>
     </Link>

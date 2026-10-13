@@ -5,7 +5,7 @@ const shimmer =
 export function CardSkeleton() {
   return (
     <div
-      className={`${shimmer} relative overflow-hidden rounded-xl bg-gray-100 p-2 shadow-sm`}
+      className={`${shimmer} relative overflow-hidden rounded-xl bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-2 shadow-sm`}
     >
       <div className="flex p-4">
         <div className="h-5 w-5 rounded-md bg-gray-200" />
@@ -110,7 +110,7 @@ export function InvoicesTableSkeleton() {
   return (
     <div className="mt-6 flow-root overflow-x-auto">
       <div className="inline-block min-w-full align-middle">
-        <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
+        <div className="rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-2 md:pt-0">
           <div className="md:hidden">
             <InvoicesMobileSkeleton />
             <InvoicesMobileSkeleton />
@@ -145,7 +145,7 @@ export function InvoicesTableSkeleton() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-gray-100">
+            <tbody>
               <TableRowSkeleton />
               <TableRowSkeleton />
               <TableRowSkeleton />

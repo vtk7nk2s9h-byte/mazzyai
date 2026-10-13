@@ -18,25 +18,21 @@ const config: Config = {
       gridTemplateColumns: {
         '13': 'repeat(13, minmax(0, 1fr))',
       },
+      // Under `extend`, not `theme`: a `keyframes` straight on `theme` replaces
+      // Tailwind's own, which silently deleted pulse, spin, ping and bounce —
+      // the classes were still generated, but their @keyframes were gone.
       keyframes: {
+        // The loading skeletons' sweep (app/ui/skeletons.tsx).
+        shimmer: {
+          '100%': { transform: 'translateX(100%)' },
+        },
         // Specular sweep travelling along a section heading's underline.
         'rule-shine': {
           '0%': { transform: 'translateX(-120%)' },
           '55%, 100%': { transform: 'translateX(420%)' },
         },
-        'm-pulse': {
-          '0%, 100%': {
-            transform: 'scale(1)',
-            textShadow: '0 0 0 rgba(255, 77, 90, 0)',
-          },
-          '50%': {
-            transform: 'scale(1.22)',
-            textShadow: '0 0 18px rgba(255, 77, 90, 0.6)',
-          },
-        },
       },
       animation: {
-        'm-pulse': 'm-pulse 2.4s ease-in-out infinite',
         'rule-shine': 'rule-shine 3.6s ease-in-out infinite',
       },
       colors: {
@@ -148,13 +144,6 @@ const config: Config = {
           800: '#eae3e4',
           900: '#f7f2f3', //  primary text
           950: '#fcfafa',
-        },
-      },
-    },
-    keyframes: {
-      shimmer: {
-        '100%': {
-          transform: 'translateX(100%)',
         },
       },
     },

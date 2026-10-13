@@ -59,7 +59,7 @@ export default async function KnowledgeList({
             </thead>
             <tbody>
               {docs.map((d) => (
-                <tr key={d.id}>
+                <tr key={d.id} className="row-glow">
                   <td className="max-w-[40ch] px-4 py-3">
                     <p className="truncate font-medium">{d.title}</p>
                     {d.sourceUrl && (

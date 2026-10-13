@@ -1,10 +1,9 @@
 import { currentUser } from '@/auth';
 import SideNav from '@/app/ui/dashboard/sidenav';
+import SidebarResizer from '@/app/ui/dashboard/sidebar-resizer';
 import VoiceAgentWidget from '@/components/ui/voice-agent-widget';
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { ChevronLeftIcon } from '@heroicons/react/24/outline';
-import { toggleSidebarAction } from '@/app/lib/sidebar-actions';
  
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -13,9 +12,14 @@ export const metadata: Metadata = {
 export default async function Layout({ children }: { children: React.ReactNode }) {
   // The widget knows who is calling, so it doesn't ask for a name and email.
   const me = await currentUser();
-  // Set by toggleSidebarAction; read here so the first paint is already the
-  // right width.
-  const collapsed = (await cookies()).get('sidebar')?.value === 'collapsed';
+  // Set by the sidebar actions and read here, so the first paint is already
+  // the right width — no flash from expanded to collapsed, or from the
+  // default width to the one you dragged to.
+  const store = await cookies();
+  const collapsed = store.get('sidebar')?.value === 'collapsed';
+  // 192px is the old fixed w-48, so an account that has never dragged the
+  // edge sees exactly what it saw before.
+  const width = Number(store.get('sidebar-w')?.value) || 192;
   return (
     // One scroller: the document's. This used to be an h-screen shell with
     // `overflow-hidden` and a `overflow-y-auto` content pane inside it, which
@@ -29,9 +33,14 @@ export default async function Layout({ children }: { children: React.ReactNode }
     // top, so there's nothing to pin.
     <div
       data-sidebar={collapsed ? 'collapsed' : 'expanded'}
+      // The dragged width, as a custom property both the spacer and the fixed
+      // panel below read. SidebarResizer rewrites it on this element during a
+      // drag, which is what makes the sidebar track the pointer without a
+      // server round trip per frame.
+      style={{ '--sb-w': `${width}px` } as React.CSSProperties}
       className="group/sb flex min-h-screen flex-col md:flex-row"
     >
-      <div className="w-full flex-none transition-[width] duration-200 motion-reduce:transition-none md:w-48 md:group-data-[sidebar=collapsed]/sb:w-16">
+      <div className="w-full flex-none transition-[width] duration-200 motion-reduce:transition-none md:group-data-[dragging=true]/sb:transition-none md:w-[var(--sb-w)] md:group-data-[sidebar=collapsed]/sb:w-16">
         {/* `fixed`, not `sticky`: a sticky box is re-placed on every scroll
             step, and at fractional zoom (110%, 175%…) that lands on a
             fractional pixel. The sidebar's blurred glass pieces (logo,
@@ -41,36 +50,25 @@ export default async function Layout({ children }: { children: React.ReactNode }
             box never moves, so nothing has anything to round. The parent
             stays in the flex row as the 12rem spacer that keeps the content
             from sliding under it. */}
-        <div className="transition-[width] duration-200 motion-reduce:transition-none md:fixed md:inset-y-0 md:left-0 md:w-48 md:group-data-[sidebar=collapsed]/sb:w-16">
+        <div className="transition-[width] duration-200 motion-reduce:transition-none md:group-data-[dragging=true]/sb:transition-none md:fixed md:inset-y-0 md:left-0 md:w-[var(--sb-w)] md:group-data-[sidebar=collapsed]/sb:w-16">
           <SideNav />
-          {/* Straddles the sidebar's right edge, near the top and level with
-              the logo plate's top edge — outside the sidebar proper, so it
-              never competes with the nav. Grey at rest, red on hover. A form
-              rather than a client component: the action flips a cookie and
-              the layout re-renders with the new width. */}
-          <form
-            action={toggleSidebarAction}
-            className="absolute -right-3 top-1.5 z-20 hidden md:block"
-          >
-            <button
-              type="submit"
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              className="flex h-6 w-6 items-center justify-center rounded-full border border-white/[0.12] bg-ink-900/80 text-gray-500 backdrop-blur-xl transition-colors hover:border-brand-red-lit/60 hover:text-brand-red-lit"
-            >
-              <ChevronLeftIcon
-                aria-hidden="true"
-                className="h-3.5 w-3.5 transition-transform duration-200 motion-reduce:transition-none md:group-data-[sidebar=collapsed]/sb:rotate-180"
-              />
-            </button>
-          </form>
+          {/* The sidebar's right edge: drag it to any width, or click the
+              glass pill at its midpoint to snap it open or shut. A client
+              island, because a pointer drag needs handlers — the sidebar
+              itself stays a Server Component. */}
+          <SidebarResizer collapsed={collapsed} width={width} />
         </div>
       </div>
       {/* min-w-0: a flex item won't shrink below its content by default, so a
           wide table would stretch this pane past the viewport and put a
           horizontal scrollbar on the document. The tables scroll sideways
           inside their own wrapper instead. */}
-      <div className="min-w-0 grow p-6 md:p-12">{children}</div>
+      {/* While a side panel is open (it sets data-panel on the shell) the page
+          leaves room for it on the right, so the table's last columns and
+          their controls stay in view instead of sliding under the card. */}
+      <div className="min-w-0 grow p-6 transition-[padding] duration-300 motion-reduce:transition-none md:p-12 md:group-data-[panel=open]/sb:pr-[calc(max(var(--sb-w),20rem)+3rem)]">
+        {children}
+      </div>
       <VoiceAgentWidget
         caller={
           me ? { name: me.name ?? '', email: me.email ?? '' } : undefined

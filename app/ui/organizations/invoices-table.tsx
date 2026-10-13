@@ -14,7 +14,7 @@ export default async function OrgInvoicesTable({
 
   if (invoices.length === 0) {
     return (
-      <div className="mt-6 rounded-lg bg-gray-50 p-10 text-center text-sm text-gray-500">
+      <div className="mt-6 rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-10 text-center text-sm text-gray-500">
         No invoices for this organization yet.
       </div>
     );
@@ -23,7 +23,7 @@ export default async function OrgInvoicesTable({
   return (
     <div className="mt-6 flow-root overflow-x-auto">
       <div className="inline-block min-w-full align-middle">
-        <div className="rounded-lg bg-gray-50 p-2 md:pt-0">
+        <div className="rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-2 md:pt-0">
           {/* Stacked cards below md, as in the other tables. */}
           <div className="md:hidden">
             {invoices.map((invoice) => (
@@ -73,11 +73,11 @@ export default async function OrgInvoicesTable({
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-gray-100">
+            <tbody>
               {invoices.map((invoice) => (
                 <tr
                   key={invoice.id}
-                  className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
+                  className="row-glow w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                 >
                   <td className="whitespace-nowrap py-3 pl-6 pr-3">
                     <p className="font-medium">

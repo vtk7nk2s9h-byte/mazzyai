@@ -79,7 +79,7 @@ export default async function CallLogsTable({
 
   if (calls.length === 0) {
     return (
-      <div className="mt-6 rounded-lg bg-gray-50 p-10 text-center text-sm text-gray-500">
+      <div className="mt-6 rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-10 text-center text-sm text-gray-500">
         {organizationId ? (
           'No calls for this organization yet.'
         ) : (
@@ -138,7 +138,7 @@ export default async function CallLogsTable({
             ))}
           </div>
 
-          <table className="hidden min-w-full text-gray-900 md:table pl-18">
+          <table className="hidden min-w-full text-gray-900 md:table">
             <thead className="rounded-lg text-left text-sm font-normal">
               <tr>
                 <th scope="col" className="px-4 py-5 font-medium sm:">
@@ -171,7 +171,7 @@ export default async function CallLogsTable({
               {calls.map((call) => (
                 <tr
                   key={call.id}
-                  className="w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
+                  className="row-glow w-full border-b py-3 text-sm last-of-type:border-none [&:first-child>td:first-child]:rounded-tl-lg [&:first-child>td:last-child]:rounded-tr-lg [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg"
                 >
                   <td className="relative whitespace-nowrap py-3 pl-12 pr-3">
                     {/* In the cell's empty left padding, so the name keeps its place. */}

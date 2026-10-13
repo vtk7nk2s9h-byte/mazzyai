@@ -4,8 +4,6 @@
 
 :root {
   --brand: #7b1e2c; /* maroon-500 */
-  --brand-dark: #5e1622; /* maroon-600 */
-  --ink: #0b0406; /* ink-900 */
   color-scheme: dark;
 }
 
@@ -132,6 +130,15 @@ body {
   }
 }
 
+/* How lit a table row is, 0 to 1 (see .row-glow). Registered so it eases:
+   a gradient can't be transitioned, but a number scaling its alpha can. It
+   inherits so the row's ::before bar reads the same eased value. */
+@property --row-lit {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 @layer components {
   /* "Back" link: a large lit label over a red rule, with an ArrowIcon that
      lights up and nudges left. Markup is
@@ -153,6 +160,74 @@ body {
   }
   .back-link-rule {
     @apply pointer-events-none absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-brand-red to-transparent shadow-[0_5px_14px_-6px_rgba(140,25,37,0.95)];
+  }
+
+  /* A table record under the pointer: a red line grows outward from the
+     middle of the row's bottom edge, a tight glow hugs it, and a wash of the
+     same red fades up from it through the row, all easing in over 300ms.
+     Nothing has a hard edge: the line, the glow and the wash each thin out to
+     nothing before the row's left, right and top, so the light reads as a
+     soft pool rather than a rectangle.
+     Put it on a <tr>. Everything is the row's own background — three layers
+     sized and faded by --row-lit — and not a pseudo-element: a ::before on a
+     <tr> is wrapped in an anonymous table cell, which pushes every cell in
+     the row one column over, even when it is absolutely positioned. It also
+     means no stacking context, so the call-log tooltips still rise over the
+     rows below. `relative` stays because the team table's row link stretches
+     over its row with it. Hover only where there is a real hover, so a tap
+     doesn't leave a row lit; keyboard focus lights it too. */
+  .row-glow {
+    @apply relative;
+    background-image:
+      /* the line, its ends faded so it doesn't stop dead */
+      linear-gradient(
+        90deg,
+        transparent,
+        #ff2e43 18%,
+        #ff2e43 82%,
+        transparent
+      ),
+      /* its glow: brightest on the line, thinning out up and to the sides */
+      radial-gradient(
+          ellipse 50% 100% at 50% 100%,
+          rgba(255, 46, 67, calc(0.55 * var(--row-lit))),
+          transparent
+        ),
+      /* the wash: an ellipse as wide and as tall as the row, centred on the
+         line, so it is strongest there and has faded to nothing by the
+         sides and the top. Stepped rather than two stops so the falloff is
+         smooth instead of a visible peak. */
+      radial-gradient(
+          ellipse 50% 100% at 50% 100%,
+          rgba(255, 46, 67, calc(0.16 * var(--row-lit))),
+          rgba(255, 46, 67, calc(0.11 * var(--row-lit))) 25%,
+          rgba(255, 46, 67, calc(0.06 * var(--row-lit))) 50%,
+          rgba(255, 46, 67, calc(0.02 * var(--row-lit))) 75%,
+          transparent
+        );
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    background-size:
+      calc(100% * var(--row-lit)) 0.5px,
+      calc(100% * var(--row-lit)) 20px,
+      100% 100%;
+    transition: --row-lit 0.3s ease-out;
+  }
+  /* Also held on while the record's side card is open (the row says so with
+     data-open), so the line marks which record the card is about. */
+  .row-glow:has(:focus-visible),
+  .row-glow[data-open] {
+    --row-lit: 1;
+  }
+  @media (hover: hover) {
+    .row-glow:hover {
+      --row-lit: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .row-glow {
+      transition: none;
+    }
   }
 
   /* The service cards' animated border. The conic gradient fills the whole
@@ -372,6 +447,99 @@ input[type='number']::-webkit-outer-spin-button {
 @media (prefers-reduced-motion: no-preference) {
   .live-row-in {
     animation: live-row-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/* The side panel (components/ui/side-panel.tsx) sliding in from the right and
+   back out. It has no scrim — the page behind stays live. The closing rule
+   comes last so it wins over the opening one while the dialog is still
+   [open]. Under reduced motion there is no animation and the component
+   closes at once. */
+@keyframes side-panel-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes side-panel-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .side-panel[open] {
+    animation: side-panel-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .side-panel[data-closing] {
+    animation: side-panel-out 0.22s ease-in forwards;
+  }
+}
+
+/* The M robot (components/ui/m-robot.tsx). Its lit face brightens on hover —
+   of the robot itself, or of the <summary> button it sits in, so the whole
+   control reacts, not just the few pixels of drawing. The motion is all
+   under no-preference: with reduced motion it sits still, and still lights. */
+.m-robot-glyph {
+  transition: filter 0.2s ease-out;
+}
+:is(.m-robot:hover, summary:hover .m-robot) .m-robot-glyph {
+  filter: brightness(1.2);
+}
+
+@keyframes mbot-float {
+  50% {
+    transform: translateY(-6%);
+  }
+}
+@keyframes mbot-hop {
+  40% {
+    transform: translateY(-16%);
+  }
+}
+@keyframes mbot-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes mbot-sway {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+@keyframes mbot-light {
+  50% {
+    opacity: 0.8;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .m-robot-body {
+    animation: mbot-float 3.4s ease-in-out infinite;
+  }
+  :is(.m-robot:hover, summary:hover .m-robot) .m-robot-body {
+    animation:
+      mbot-hop 0.55s ease-out,
+      mbot-float 3.4s ease-in-out 0.55s infinite;
+  }
+  .m-robot-glyph {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: mbot-blink 5.5s infinite;
+  }
+  .m-robot-antenna {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: mbot-sway 2.8s ease-in-out infinite;
+  }
+  .m-robot-light {
+    animation: mbot-light 1.8s ease-in-out infinite;
   }
 }
 

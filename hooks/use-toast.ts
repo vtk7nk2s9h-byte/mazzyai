@@ -167,15 +167,15 @@ function toast({ ...props }: Toast) {
   };
 }
 
-/* The two shapes the app actually fires, carrying the status glyph the other
-   project appends in its root route — so a call site only passes copy. */
+/* The two shapes the app actually fires. The status light (green or red dot)
+   is drawn by the Toaster from the variant, so a call site only passes copy. */
 function toastSuccess(
   message: string,
   description?: React.ReactNode,
   action?: ToastActionElement,
 ) {
   return toast({
-    title: `${message} ✅`,
+    title: message,
     description,
     variant: 'success',
     action,
@@ -183,7 +183,7 @@ function toastSuccess(
 }
 
 function toastError(message: string, description?: React.ReactNode) {
-  return toast({ title: `${message} 🛑`, description, variant: 'error' });
+  return toast({ title: message, description, variant: 'error' });
 }
 
 function useToast() {

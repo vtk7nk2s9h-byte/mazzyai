@@ -115,11 +115,11 @@ export function AgentStatusDot({ status }: { status: string }) {
       aria-label={label(status)}
       title={label(status)}
       className={clsx('inline-block h-1.5 w-1.5 shrink-0 rounded-full', {
-        'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]':
+        'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)] motion-safe:animate-pulse':
           status === 'ACTIVE',
-        'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]':
+        'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)] motion-safe:animate-pulse':
           status === 'PAUSED',
-        'bg-brand-red-lit shadow-[0_0_8px_rgba(255,46,67,0.8)]':
+        'bg-brand-red-lit shadow-[0_0_8px_rgba(255,46,67,0.8)] motion-safe:animate-pulse':
           status === 'DISACTIVATED',
         'bg-gray-400/60': !['ACTIVE', 'PAUSED', 'DISACTIVATED'].includes(status),
       })}

@@ -157,7 +157,7 @@ export default async function SideNav() {
             {unread > 0 && (
               <span
                 aria-hidden="true"
-                className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand-red-lit"
+                className="absolute right-2 top-2 h-2 w-2 rounded-full bg-brand-red-lit motion-safe:animate-pulse"
               />
             )}
           </button>
@@ -196,7 +196,7 @@ export default async function SideNav() {
                   <span
                     aria-hidden="true"
                     className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                      n.isRead ? 'bg-transparent' : 'bg-brand-red-lit'
+                      n.isRead ? 'bg-transparent' : 'bg-brand-red-lit motion-safe:animate-pulse'
                     }`}
                   />
                   <div className="min-w-0">

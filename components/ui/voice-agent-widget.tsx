@@ -11,6 +11,7 @@ import type {
 
 import { cn } from "@/app/lib/utils.ts"
 import { Orb, type AgentState } from '@/components/ui/orb';
+import { MRobot } from '@/components/ui/m-robot';
 
 // A Retell *public* key (public_key_...), not an API key. It is domain-locked
 // in the Retell dashboard and may only open web calls, which is why it is safe
@@ -302,21 +303,16 @@ export default function VoiceAgentWidget({
       }}
     >
       <summary
+        aria-label="Talk to us"
         className={cn(
-          'flex cursor-pointer list-none items-center gap-2.5 rounded-full border border-white/[0.07] group-open:hidden',
-          'bg-white/[0.035] py-3 pl-4 pr-5 text-sm font-medium text-gray-900',
-          'shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl',
-          'transition-colors hover:border-white/[0.12]',
+          'flex h-14 w-14 cursor-pointer list-none items-center justify-center rounded-full group-open:hidden',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400',
           '[&::-webkit-details-marker]:hidden',
         )}
       >
-        {/* The agent itself, small: it follows the call even with the panel
-            closed. */}
-        <span className="inline-flex h-8 w-8 overflow-hidden rounded-full border border-white/10 bg-black/30">
-          <Orb colors={['#ff6b78', '#8c1925']} seed={1000} agentState={orbState} />
-        </span>
-        Talk to us
+        {/* The robot is the button. It turns to follow the pointer and brightens
+            when the button is hovered (see m-robot.tsx). */}
+        <MRobot size={56} />
       </summary>
 
       <div className="absolute bottom-0 right-0 w-[min(22rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.035] shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl">

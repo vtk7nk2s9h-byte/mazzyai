@@ -95,7 +95,7 @@ export default async function Page(props: {
       />
 
       {/* Who and how it went, before any detail. */}
-      <div className="flex flex-col gap-4 rounded-lg bg-gray-50 p-5 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-4 rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-5 sm:flex-row sm:items-center">
         <div className="min-w-0 grow">
           <h1 className="truncate text-xl font-medium text-gray-900">
             {caller}

@@ -9,9 +9,9 @@ function Dot({ tone }: { tone: 'good' | 'bad' | 'dim' }) {
       aria-hidden="true"
       className={`h-1.5 w-1.5 shrink-0 rounded-full ${
         tone === 'good'
-          ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)]'
+          ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.8)] motion-safe:animate-pulse'
           : tone === 'bad'
-            ? 'bg-brand-red-lit shadow-[0_0_8px_rgba(255,46,67,0.8)]'
+            ? 'bg-brand-red-lit shadow-[0_0_8px_rgba(255,46,67,0.8)] motion-safe:animate-pulse'
             : 'bg-gray-400/60'
       }`}
     />

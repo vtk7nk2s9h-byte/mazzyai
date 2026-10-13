@@ -37,14 +37,14 @@ export default async function Page() {
           of one.
         </p>
       ) : contacts.length === 0 ? (
-        <div className="mt-6 rounded-lg bg-gray-50 p-10 text-center text-sm text-gray-500">
+        <div className="mt-6 rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-10 text-center text-sm text-gray-500">
           No contacts yet. Open a call in Call logs and choose{' '}
           <span className="text-gray-600">Save contact</span> to keep its
           caller here.
         </div>
       ) : (
         <>
-          <div className="shadow-[0_0_24px_-4px_rgba(245,184,46,0.5)] mt-6 overflow-x-auto rounded-lg border border-yellow-300/40 bg-gray-50 p-2">
+          <div className="mt-6 overflow-x-auto rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-2">
             <table className="min-w-full text-left text-sm text-gray-900">
               <thead>
                 <tr>
@@ -65,9 +65,9 @@ export default async function Page() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-gray-100">
+              <tbody>
                 {contacts.map((c) => (
-                  <tr key={c.id} className="border-b last:border-none">
+                  <tr key={c.id} className="row-glow border-b last:border-none">
                     <td className="whitespace-nowrap px-4 py-3 font-medium">
                       {c.name ?? 'Unnamed'}
                     </td>
@@ -103,7 +103,7 @@ export default async function Page() {
               </tbody>
             </table>
           </div>
-          <div className="shadow-[0_0_24px_-4px_rgba(245,184,46,0.5)] mt-6 overflow-x-auto rounded-lg border border-amber-100 bg-gray-50 p-2">
+          <div className="mt-6 overflow-x-auto rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-2">
             <table className="min-w-full text-left text-sm text-gray-900">
               <thead>
                 <tr>
@@ -124,9 +124,9 @@ export default async function Page() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-gray-100">
+              <tbody>
                 {contacts.map((c) => (
-                  <tr key={c.id} className="border-b last:border-none">
+                  <tr key={c.id} className="row-glow border-b last:border-none">
                     <td className="whitespace-nowrap px-4 py-3 font-medium">
                       {c.name ?? 'Unnamed'}
                     </td>
@@ -163,7 +163,7 @@ export default async function Page() {
             </table>
             
           </div>
-          <div className="shadow-[0_0_24px_-4px_rgba(245,184,46,0.5)] mt-6 overflow-x-auto rounded-lg border border-yellow-300/40 bg-gray-50 p-2">
+          <div className="mt-6 overflow-x-auto rounded-lg bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-2">
             <table className="min-w-full text-left text-sm text-gray-900">
               <thead>
                 <tr>
@@ -184,9 +184,9 @@ export default async function Page() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-gray-100">
+              <tbody>
                 {contacts.map((c) => (
-                  <tr key={c.id} className="border-b last:border-none">
+                  <tr key={c.id} className="row-glow border-b last:border-none">
                     <td className="whitespace-nowrap px-4 py-3 font-medium">
                       {c.name ?? 'Unnamed'}
                     </td>
