@@ -39,7 +39,8 @@ next-env.d.ts
 node_modules/
 dist/
 
-# claude code (machine-local state: pids, ports, absolute paths)
-.claude/settings.local.json
-.claude/.headroom_wrap_*
-.claude/launch.json
+# claude code
+.claude/
+CLAUDE.md
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
