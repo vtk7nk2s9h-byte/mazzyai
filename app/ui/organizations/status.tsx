@@ -1,3 +1,8 @@
+import {
+  ArrowDownRightIcon,
+  ArrowUpRightIcon,
+  MinusIcon,
+} from '@heroicons/react/24/solid';
 import clsx from 'clsx';
 
 const pill =
@@ -178,6 +183,100 @@ export function UserStatusBadge({ status }: { status: string }) {
       {label(status)}
     </span>
   );
+}
+
+/**
+ * POSITIVE / NEUTRAL / NEGATIVE / UNKNOWN — how a call went, or how a run of
+ * them went overall. Same ladder as the call log's SentimentDot; UNKNOWN is
+ * faded because it means ungraded, not neutral.
+ */
+export function SentimentBadge({ sentiment }: { sentiment: string }) {
+  return (
+    <span
+      className={clsx(pill, {
+        [tone.good]: sentiment === 'POSITIVE',
+        [tone.neutral]: sentiment === 'NEUTRAL',
+        [tone.bad]: sentiment === 'NEGATIVE',
+        [tone.faded]: sentiment === 'UNKNOWN',
+      })}
+    >
+      {sentiment === 'UNKNOWN' ? 'Ungraded' : label(sentiment)}
+    </span>
+  );
+}
+
+/**
+ * A move against the period before it: a leaning arrow and the change, green
+ * when it's up, red when it's down, neutral when it hasn't moved. `change`
+ * comes in already formatted ("+12%", "-8%", "+3", "0") — what divides by what
+ * is the caller's business, not the badge's.
+ *
+ * The only badge here carrying an icon, hence the gap.
+ */
+export function TrendBadge({
+  direction,
+  change,
+  description,
+}: {
+  direction: 'up' | 'down' | 'flat';
+  change: string;
+  /** Read after the change by a screen reader, e.g. "against last month". */
+  description?: string;
+}) {
+  const Icon =
+    direction === 'up'
+      ? ArrowUpRightIcon
+      : direction === 'down'
+        ? ArrowDownRightIcon
+        : MinusIcon;
+  return (
+    <span
+      className={clsx(pill, 'gap-1', {
+        [tone.good]: direction === 'up',
+        [tone.bad]: direction === 'down',
+        [tone.neutral]: direction === 'flat',
+      })}
+    >
+      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      {change}
+      {description ? <span className="sr-only"> {description}</span> : null}
+    </span>
+  );
+}
+
+/** How many calls an agent has taken, in the brand tone: a figure, not a verdict. */
+export function CallCountBadge({ calls }: { calls: number }) {
+  return (
+    <span className={clsx(pill, tone.brand)}>
+      {calls.toLocaleString('en')} {calls === 1 ? 'call' : 'calls'}
+    </span>
+  );
+}
+
+/**
+ * Whether a knowledge base can be relied on: red as soon as any document has
+ * failed, amber while some are still being indexed, green when everything is
+ * indexed, neutral when there is nothing in it yet. Failure wins over
+ * progress, since that is the one that needs somebody.
+ */
+export function KnowledgeHealthBadge({
+  indexed,
+  failed,
+  inProgress,
+}: {
+  indexed: number;
+  failed: number;
+  inProgress: number;
+}) {
+  const [text, badgeTone] =
+    failed > 0
+      ? [`${failed.toLocaleString('en')} failed`, tone.bad]
+      : inProgress > 0
+        ? [`${inProgress.toLocaleString('en')} indexing`, tone.warn]
+        : indexed > 0
+          ? ['Healthy', tone.good]
+          : ['Empty', tone.faded];
+  return <span className={clsx(pill, badgeTone)}>{text}</span>;
 }
 
 /** Whether an agent is linked to its Retell voice agent (retellAgentId set). */

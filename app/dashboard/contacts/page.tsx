@@ -29,7 +29,7 @@ export default async function Page() {
 
   return (
     <div className="w-full">
-      <h1 className={`${lusitana.className} text-2xl`}>Contacts</h1>
+      <h1 className={`${lusitana.className} page-heading`}>Contacts</h1>
 
       {!organizationId ? (
         <p className="mt-6 text-sm text-gray-500">

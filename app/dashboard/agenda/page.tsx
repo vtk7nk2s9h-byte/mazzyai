@@ -23,12 +23,12 @@ export default async function Page() {
         <Suspense fallback={<InvoicesTableSkeleton />}>
           <Agenda
             organizationId={organizationId}
-            heading={<h1 className={`${lusitana.className} text-2xl`}>Agenda</h1>}
+            heading={<h1 className={`${lusitana.className} page-heading`}>Agenda</h1>}
           />
         </Suspense>
       ) : (
         <>
-        <h1 className={`${lusitana.className} mb-4 text-2xl`}>Agenda</h1>
+        <h1 className={`${lusitana.className} page-heading mb-4`}>Agenda</h1>
         <p className="text-sm text-gray-500">
           Your account isn&apos;t part of an organization yet, so there is no
           agenda to show.

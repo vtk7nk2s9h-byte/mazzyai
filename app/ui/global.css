@@ -162,6 +162,28 @@ body {
     @apply pointer-events-none absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-gradient-to-r from-transparent via-brand-red to-transparent shadow-[0_5px_14px_-6px_rgba(140,25,37,0.95)];
   }
 
+  /* A page's heading: large and bold, its first letter lit, over a thin red
+     rule that fades out at both ends (the section headings' own, held still).
+     Put it on the <h1> beside the Lusitana class. Both marks are pseudo-
+     elements, so the markup stays a plain string: ::first-letter lights the
+     G and ::after draws the rule. The heading is inline-block so the rule is
+     the width of the words, not the page. A sub-section heading takes the same
+     class with `text-2xl`, one step down so it doesn't compete with the page's
+     title (utilities come after components, so it wins). The detail pages'
+     name headings add `max-w-full truncate` so a long name ends in an ellipsis
+     inside its header card. */
+  .page-heading {
+    @apply relative inline-block pb-3 text-3xl font-bold tracking-tight md:text-4xl;
+  }
+  .page-heading::first-letter {
+    @apply text-brand-red-lit;
+    text-shadow: 0 0 22px rgba(255, 46, 67, 0.5);
+  }
+  .page-heading::after {
+    content: '';
+    @apply pointer-events-none absolute inset-x-0 bottom-0 h-[3px] rounded-full bg-gradient-to-r from-transparent via-brand-red to-transparent shadow-[0_5px_14px_-6px_rgba(140,25,37,0.95)];
+  }
+
   /* A table record under the pointer: a red line grows outward from the
      middle of the row's bottom edge, a tight glow hugs it, and a wash of the
      same red fades up from it through the row, all easing in over 300ms.
@@ -207,9 +229,12 @@ body {
         );
     background-repeat: no-repeat;
     background-position: center bottom;
+    /* The glow is the middle's thickness: it is brightest there, so at 20px
+       it read as a heavy band rather than a line. 10px keeps the soft pool
+       but leaves the centre thin. */
     background-size:
       calc(100% * var(--row-lit)) 0.5px,
-      calc(100% * var(--row-lit)) 20px,
+      calc(100% * var(--row-lit)) 10px,
       100% 100%;
     transition: --row-lit 0.3s ease-out;
   }

@@ -48,7 +48,7 @@ export default async function Page(props: {
 
   return (
     <div className="w-full">
-      <h1 className={`${lusitana.className} mb-2 text-2xl`}>Live Events</h1>
+      <h1 className={`${lusitana.className} page-heading mb-2`}>Live Events</h1>
       {/* Its own boundary: the Retell check can take a few seconds when Retell
           is slow, and must not hold the feed back. */}
       <Suspense

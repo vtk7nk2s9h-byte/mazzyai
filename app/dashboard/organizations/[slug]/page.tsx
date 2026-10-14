@@ -238,12 +238,12 @@ export default async function Page(props: {
           here rather than from the sidebar — see app/ui/dashboard/nav-links.
           Each table streams behind its own boundary, so a slow one doesn't
           hold up the other or the settings above. */}
-      <h2 className={`${lusitana.className} mt-10 text-xl`}>Call logs</h2>
+      <h2 className={`${lusitana.className} page-heading mt-10 text-2xl`}>Call logs</h2>
       <Suspense key={`calls-${callsPage}`} fallback={<InvoicesTableSkeleton />}>
         <CallLogsSection organizationId={org.id} currentPage={callsPage} />
       </Suspense>
 
-      <h2 className={`${lusitana.className} mt-10 text-xl`}>Invoices</h2>
+      <h2 className={`${lusitana.className} page-heading mt-10 text-2xl`}>Invoices</h2>
       <Suspense
         key={`invoices-${invoicesPage}`}
         fallback={<InvoicesTableSkeleton />}
@@ -261,7 +261,7 @@ export default async function Page(props: {
         <Suspense fallback={<InvoicesTableSkeleton />}>
           <Agenda
             organizationId={org.id}
-            heading={<h2 className={`${lusitana.className} text-xl`}>Agenda</h2>}
+            heading={<h2 className={`${lusitana.className} page-heading text-2xl`}>Agenda</h2>}
           />
         </Suspense>
       </div>

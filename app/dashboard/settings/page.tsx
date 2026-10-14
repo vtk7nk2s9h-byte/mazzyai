@@ -19,7 +19,7 @@ export default async function Page() {
 
   return (
     <div className="w-full">
-      <h1 className={`${lusitana.className} mb-4 text-2xl`}>Settings</h1>
+      <h1 className={`${lusitana.className} page-heading mb-4`}>Settings</h1>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Account" description="Who you are signed in as.">

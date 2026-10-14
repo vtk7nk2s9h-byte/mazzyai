@@ -2,17 +2,19 @@
 const shimmer =
   'before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent';
 
+// Geometry follows the real card in app/ui/dashboard/cards.tsx — same header
+// row and the same well under it — so the row doesn't jump when it loads.
 export function CardSkeleton() {
   return (
     <div
-      className={`${shimmer} relative overflow-hidden rounded-xl bg-gradient-to-br from-white/[0.10] to-white/[0.03] border border-white/[0.12] p-2 shadow-sm`}
+      className={`${shimmer} relative flex min-h-[23rem] flex-col overflow-hidden rounded-xl border border-white/[0.12] bg-gradient-to-br from-white/[0.10] to-white/[0.03] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_30px_-12px_rgba(0,0,0,0.6)]`}
     >
-      <div className="flex p-4">
+      <div className="flex items-center p-4 pb-3">
         <div className="h-5 w-5 rounded-md bg-gray-200" />
-        <div className="ml-2 h-6 w-16 rounded-md bg-gray-200 text-sm font-medium" />
+        <div className="ml-2 h-5 w-16 rounded-md bg-gray-200" />
       </div>
-      <div className="flex items-center justify-center truncate rounded-xl bg-gray-100 px-4 py-8">
-        <div className="h-7 w-20 rounded-md bg-gray-200" />
+      <div className="mt-auto flex items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.04] px-4 py-5">
+        <div className="h-9 w-24 rounded-md bg-gray-200" />
       </div>
     </div>
   );

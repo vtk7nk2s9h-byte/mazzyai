@@ -33,7 +33,7 @@ export default async function Page(props: {
 
   return (
     <div className="w-full">
-      <h1 className={`${lusitana.className} text-2xl`}>Invoices</h1>
+      <h1 className={`${lusitana.className} page-heading`}>Invoices</h1>
       {organizationId ? (
         <Suspense key={currentPage} fallback={<InvoicesTableSkeleton />}>
           <InvoiceList

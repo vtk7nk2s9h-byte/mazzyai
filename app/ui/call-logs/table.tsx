@@ -17,7 +17,10 @@ import Link from 'next/link';
  * Caller name with a small arrow that reveals the full summary on hover.
  *
  * CSS-only — `group-hover` plus `peer-focus-visible`, so it needs no client
- * component and the table stays server-rendered. The arrow is a real button so
+ * component and the table stays server-rendered. The bubble is lightly blurred
+ * and barely filled, so the row behind it shows through a little, and it is
+ * the same look as the dashboard cards' detail bubbles (app/ui/dashboard/
+ * cards.tsx) — change one, change the other. The arrow is a real button so
  * the popup is reachable by keyboard; a mouse click doesn't keep it open, so it
  * closes as soon as the pointer leaves. And `whitespace-normal` undoes the
  * cell's nowrap so the text wraps inside the bubble.
@@ -46,14 +49,14 @@ function CallerName({
           <button
             type="button"
             aria-label={`Show call summary for ${name}`}
-            className="peer inline-flex rounded text-gray-400 transition-colors hover:text-brand-red-lit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400 group-hover:text-brand-red-lit"
+            className="peer inline-flex cursor-default rounded text-gray-400 transition-colors hover:text-brand-red-lit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-maroon-400 group-hover:text-brand-red-lit"
           >
             <ChevronDownIcon className="w-3.5" />
           </button>
 
           <span
             role="tooltip"
-            className="pointer-events-none invisible absolute left-1/2 top-full z-30 mt-1.5 [tr:last-child_&]:bottom-full [tr:last-child_&]:top-auto [tr:last-child_&]:mb-1.5 [tr:last-child_&]:mt-0 w-64 -translate-x-1/2 whitespace-normal rounded-lg border border-maroon-400/50 bg-white/[0.06] p-3 text-xs font-normal leading-relaxed text-gray-600 opacity-0 shadow-[0_0_0_1px_rgba(255,46,67,0.08),0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-2xl transition-opacity duration-150 group-hover:visible group-hover:opacity-100 peer-focus-visible:visible peer-focus-visible:opacity-100 motion-reduce:transition-none"
+            className="pointer-events-none invisible absolute left-1/2 top-full z-30 mt-1.5 [tr:last-child_&]:bottom-full [tr:last-child_&]:top-auto [tr:last-child_&]:mb-1.5 [tr:last-child_&]:mt-0 w-64 -translate-x-1/2 whitespace-normal rounded-lg border border-maroon-400/50 bg-[#140a0d]/60 p-3 text-xs font-medium leading-relaxed text-gray-700 opacity-0 shadow-[0_0_0_1px_rgba(255,46,67,0.08),0_18px_50px_-24px_rgba(0,0,0,0.9)] backdrop-blur-[3px] transition-opacity duration-150 group-hover:visible group-hover:opacity-100 peer-focus-visible:visible peer-focus-visible:opacity-100 motion-reduce:transition-none"
           >
             {summary}
           </span>

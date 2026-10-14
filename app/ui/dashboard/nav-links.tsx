@@ -77,15 +77,15 @@ const superuserLinks = [
     : [{ name: 'Test lab', href: '/dashboard/test-lab', icon: BeakerIcon }]),
 ];
 
-// A superuser reads call logs, invoices and the agenda per tenant, from inside
-// an organization's page, so the global views drop out of their sidebar (the
+// A superuser reads invoices and the agenda per tenant, from inside an
+// organization's page, so those global views drop out of their sidebar (the
 // agenda is the signed-in user's own organization, which a superuser has none
-// of).
-// Everyone else keeps them. The routes still exist either way — this hides the
-// links, it doesn't close the pages.
+// of). Call logs stay: MazzyAI takes calls of its own, and the global table
+// is the only place every organization's calls appear together.
+// Everyone else keeps them all. The routes still exist either way — this hides
+// the links, it doesn't close the pages.
 const superuserHides = [
   '/dashboard/invoices',
-  '/dashboard/call-logs',
   '/dashboard/agenda',
   '/dashboard/contacts',
 ];

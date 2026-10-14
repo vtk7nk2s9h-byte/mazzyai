@@ -220,7 +220,7 @@ export default async function Page(props: {
   return (
     <div className="w-full">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className={`${lusitana.className} text-2xl`}>Analytics</h1>
+        <h1 className={`${lusitana.className} page-heading`}>Analytics</h1>
         <RangeFilter
           ranges={RANGES}
           current={range}

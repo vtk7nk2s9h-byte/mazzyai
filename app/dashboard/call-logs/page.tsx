@@ -22,7 +22,7 @@ export default async function Page() {
   return (
     <div className="w-full">
       <div className="flex w-full items-center justify-between">
-        <h1 className={`${lusitana.className} text-2xl`}>Call logs</h1>
+        <h1 className={`${lusitana.className} page-heading`}>Call logs</h1>
       </div>
       {isSuperuser || organizationId ? (
         <Suspense fallback={<InvoicesTableSkeleton />}>

@@ -37,7 +37,7 @@ export default async function Page(props: {
 
   return (
     <div className="w-full">
-      <h1 className={`${lusitana.className} mb-4 text-2xl`}>Test lab</h1>
+      <h1 className={`${lusitana.className} page-heading mb-4`}>Test lab</h1>
 
       <form className="mb-4 flex flex-wrap items-center gap-3">
         <select name="org" defaultValue={selected?.id} aria-label="Organization" className={field}>

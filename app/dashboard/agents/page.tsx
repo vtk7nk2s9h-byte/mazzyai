@@ -44,7 +44,7 @@ export default async function Page(props: {
     if (!organizationId) notFound();
     return (
       <div className="w-full">
-        <h1 className={`${lusitana.className} text-2xl`}>Agents</h1>
+        <h1 className={`${lusitana.className} page-heading`}>Agents</h1>
         <Suspense fallback={<InvoicesTableSkeleton />}>
           <RetellAgentsTable
             page={retellPage}
@@ -53,7 +53,7 @@ export default async function Page(props: {
           />
         </Suspense>
 
-        <h2 className={`${lusitana.className} mt-10 text-xl`}>
+        <h2 className={`${lusitana.className} page-heading mt-10 text-2xl`}>
           Knowledge base and Resources
         </h2>
         <p className="mt-1 text-sm text-gray-500">
@@ -73,14 +73,14 @@ export default async function Page(props: {
 
   return (
     <div className="w-full">
-      <h1 className={`${lusitana.className} text-2xl`}>Agents</h1>
+      <h1 className={`${lusitana.className} page-heading`}>Agents</h1>
 
       <Suspense fallback={<InvoicesTableSkeleton />}>
         <AgentsTable page={agentsPage} />
       </Suspense>
 
       <div className="mt-10 flex items-center justify-between gap-3">
-        <h2 className={`${lusitana.className} text-xl`}>Retell agents</h2>
+        <h2 className={`${lusitana.className} page-heading text-2xl`}>Retell agents</h2>
         <Suspense>
           <CreateAgentButton />
         </Suspense>

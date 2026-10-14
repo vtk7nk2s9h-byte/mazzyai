@@ -26,12 +26,12 @@ export default async function Billing({
           organizationId={organizationId}
           methods={methods}
           heading={
-            <h2 className={`${lusitana.className} text-xl`}>Payment information</h2>
+            <h2 className={`${lusitana.className} page-heading text-2xl`}>Payment information</h2>
           }
         />
       </div>
 
-      <h2 className={`${lusitana.className} mt-10 text-xl`}>Subscription</h2>
+      <h2 className={`${lusitana.className} page-heading mt-10 text-2xl`}>Subscription</h2>
       <div className="mt-4">
         {subscription ? (
           <Subscription organizationId={organizationId} subscription={subscription} />
